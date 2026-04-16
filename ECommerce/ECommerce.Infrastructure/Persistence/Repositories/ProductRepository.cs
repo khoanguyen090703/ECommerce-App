@@ -1,4 +1,5 @@
-﻿using ECommerce.Domain.Entities;
+﻿using ECommerce.Application.Exceptions;
+using ECommerce.Domain.Entities;
 using ECommerce.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -16,12 +17,21 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
             _context = context;
         }
 
+        public async Task AddAsync(Product product)
+        {
+                await _context.Products.AddAsync(product);
+                await _context.SaveChangesAsync();
+        }
+
         public async Task<List<Product>> GetAllAsync()
         {
             List<Product> products;
             try
             {
-                products = await _context.Products.ToListAsync();
+                products = await _context.Products
+                    .Include(p => p.Category)
+                    .Include(p => p.Images)
+                    .ToListAsync();
 
             }
             catch

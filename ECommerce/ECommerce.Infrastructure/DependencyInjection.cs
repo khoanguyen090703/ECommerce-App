@@ -21,6 +21,7 @@ namespace ECommerce.Infrastructure
                     configuration.GetConnectionString("ECommerceDB")));
 
             services.AddScoped<IProductRepository, ProductRepository>();
+            services.AddScoped<ICategoryRepository, CategoryRepository>();
 
             return services;
         }

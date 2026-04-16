@@ -4,13 +4,13 @@ using System.Text;
 
 namespace ECommerce.Application.Exceptions
 {
-    public class NotFoundException : Exception
+    public class ValidationException : Exception
     {
-        public NotFoundException()
+        public ValidationException()
         {
         }
 
-        public NotFoundException(string? message) : base(message)
+        public ValidationException(string? message) : base(message)
         {
         }
     }

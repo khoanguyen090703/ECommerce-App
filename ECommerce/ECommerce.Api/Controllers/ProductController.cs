@@ -1,4 +1,5 @@
-﻿using ECommerce.Application.Interfaces;
+﻿using ECommerce.Application.DTOs.Request;
+using ECommerce.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ECommerce.Api.Controllers
@@ -20,15 +21,15 @@ namespace ECommerce.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            try
-            {
-                var products = await _productService.GetAllAsync();
-                return Ok(products);
-            }
-            catch
-            {
-                throw;
-            }
+            var products = await _productService.GetAllAsync();
+            return Ok(products);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateProduct([FromBody] CreateProductRequest request)
+        {
+            await _productService.AddAsync(request);
+            return Created();
         }
     }
 }

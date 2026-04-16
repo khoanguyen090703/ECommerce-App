@@ -1,6 +1,8 @@
-using ECommerce.Api.Middlewares;
+using ECommerce.Api.ErrorHandlers;
 using ECommerce.Application;
+using ECommerce.Application.Validators;
 using ECommerce.Infrastructure;
+using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +14,10 @@ builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateProductRequestValidator>();
 
 var app = builder.Build();
 
@@ -23,7 +29,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseMiddleware<ExceptionMiddleware>();
+app.UseExceptionHandler();
 app.UseHttpsRedirection();
 
 app.UseRouting();
