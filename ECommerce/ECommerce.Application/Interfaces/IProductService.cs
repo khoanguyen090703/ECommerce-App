@@ -11,5 +11,11 @@ namespace ECommerce.Application.Interfaces
         Task<List<ProductResponse4List>> GetAllAsync();
 
         Task AddAsync(CreateProductRequest request);
+
+        Task<ProductDetailsResponse?> GetProductByIdAsync(int id);
+
+        Task UpdateProductByIdAsync(int id, UpdateProductRequest request);
+
+        Task DeleteProductByIdAsync(int id);
     }
 }

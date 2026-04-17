@@ -10,5 +10,11 @@ namespace ECommerce.Domain.Interfaces
         Task<List<Product>> GetAllAsync();
 
         Task AddAsync(Product product);
+
+        Task<Product?> GetByIdAsync(int id);
+
+        Task UpdateAsync(Product product);
+
+        Task DeleteAsync(Product product);
     }
 }

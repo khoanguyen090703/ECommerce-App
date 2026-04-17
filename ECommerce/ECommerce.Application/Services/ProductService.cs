@@ -19,15 +19,18 @@ namespace ECommerce.Application.Services
 
         private readonly IValidator<CreateProductRequest> _createProductRequestValidator;
 
+        private readonly IValidator<UpdateProductRequest> _updateProductRequestValidator;
+
         public ProductService(
             IProductRepository productRepository,
             ICategoryRepository categoryRepository,
-            IValidator<CreateProductRequest> createProductRequestValidator
-            )
+            IValidator<CreateProductRequest> createProductRequestValidator,
+            IValidator<UpdateProductRequest> updateProductRequestValidator)
         {
             _productRepository = productRepository;
             _categoryRepository = categoryRepository;
             _createProductRequestValidator = createProductRequestValidator;
+            _updateProductRequestValidator = updateProductRequestValidator;
         }
 
         public async Task AddAsync(CreateProductRequest request)
@@ -68,6 +71,14 @@ namespace ECommerce.Application.Services
             await _productRepository.AddAsync(product);
         }
 
+        public async Task DeleteProductByIdAsync(int id)
+        {
+            var product = await _productRepository.GetByIdAsync(id);
+            if (product == null)
+                throw new NotFoundException($"Product with id {id} not found.");
+            await _productRepository.DeleteAsync(product);
+        }
+
         public async Task<List<ProductResponse4List>> GetAllAsync()
         {
             var products = await _productRepository.GetAllAsync();
@@ -82,6 +93,46 @@ namespace ECommerce.Application.Services
                 UpdatedDate = p.UpdatedDate
 
             }).ToList();
+        }
+
+        public async Task<ProductDetailsResponse?> GetProductByIdAsync(int id)
+        {
+            var product = await _productRepository.GetByIdAsync(id);
+            if (product == null)
+                throw new NotFoundException($"Product with id {id} not found.");
+
+            var response = new ProductDetailsResponse
+            {
+                Id = id,
+                Name = product.Name,
+                Description= product.Description,
+                Price= product.Price,
+                Category = product.Category.Name ?? "",
+                Images = product.Images.Select(i => i.Url).ToList(),
+                CreatedDate= product.CreatedDate,
+                UpdatedDate = product.UpdatedDate
+            };
+            return response;
+        }
+
+        public async Task UpdateProductByIdAsync(int id, UpdateProductRequest request)
+        {
+            var product = await _productRepository.GetByIdAsync(id);
+            if (product == null)
+                throw new NotFoundException($"Product with id {id} not found.");
+
+            await _updateProductRequestValidator.ValidateAndThrowAsync(request);
+
+            var category = await _categoryRepository.GetById(request.CategoryId);
+            if (category == null)
+                throw new NotFoundException($"Category with id {request.CategoryId} not found in update product.");
+
+            product.Name = request.Name;
+            product.Description = request.Description;
+            product.Price = request.Price;
+            product.Category = category;
+
+            await _productRepository.UpdateAsync(product);
         }
     }
 }

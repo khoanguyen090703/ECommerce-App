@@ -23,6 +23,12 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
                 await _context.SaveChangesAsync();
         }
 
+        public async Task DeleteAsync(Product product)
+        {
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync();
+        }
+
         public async Task<List<Product>> GetAllAsync()
         {
             List<Product> products;
@@ -39,6 +45,21 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
                 throw;
             }
             return products;
+        }
+
+        public async Task<Product?> GetByIdAsync(int id)
+        {
+            var product = await _context.Products
+                .Include (p => p.Category)
+                .Include (p => p.Images)
+                .SingleOrDefaultAsync(p => p.Id == id);
+            return product;
+        }
+
+        public async Task UpdateAsync(Product product)
+        {
+            _context.Products.Update(product);
+            await _context.SaveChangesAsync();
         }
     }
 }

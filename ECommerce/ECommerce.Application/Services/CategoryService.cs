@@ -17,10 +17,13 @@ namespace ECommerce.Application.Services
 
         private readonly IValidator<CreateCategoryRequest> _createCategoryRequestValidator;
 
-        public CategoryService(ICategoryRepository categoryRepository, IValidator<CreateCategoryRequest> createCategoryRequestValidator)
+        private readonly IValidator<UpdateCategoryRequest> _updateCategoryRequestValidator;
+
+        public CategoryService(ICategoryRepository categoryRepository, IValidator<CreateCategoryRequest> createCategoryRequestValidator, IValidator<UpdateCategoryRequest> updateCategoryRequestValidator)
         {
             _categoryRepository = categoryRepository;
             _createCategoryRequestValidator = createCategoryRequestValidator;
+            _updateCategoryRequestValidator = updateCategoryRequestValidator;
         }
 
         public async Task CreateProductAsync(CreateCategoryRequest request)
@@ -64,6 +67,8 @@ namespace ECommerce.Application.Services
             var category = await _categoryRepository.GetById(id);
             if(category == null)
                 throw new NotFoundException($"Category with id {id} not found.");
+
+            await _updateCategoryRequestValidator.ValidateAndThrowAsync(request);
 
             if (await _categoryRepository.IsNameExistedExceptAsync(request.Name, id))
                 throw new ConflictException($"{request.Name} is existed with another category.");
