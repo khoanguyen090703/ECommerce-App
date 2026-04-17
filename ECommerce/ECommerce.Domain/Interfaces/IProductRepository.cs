@@ -1,4 +1,6 @@
-﻿using ECommerce.Domain.Entities;
+﻿using ECommerce.Domain.Common;
+using ECommerce.Domain.Entities;
+using ECommerce.Domain.QueryParameters;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -16,5 +18,7 @@ namespace ECommerce.Domain.Interfaces
         Task UpdateAsync(Product product);
 
         Task DeleteAsync(Product product);
+
+        Task<PagedResult<Product>> GetAsync(ProductQueryParams parameters);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using ECommerce.Domain.Interfaces;
 using ECommerce.Infrastructure.Persistence;
+using ECommerce.Infrastructure.Persistence.Intercepters;
 using ECommerce.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -16,9 +17,18 @@ namespace ECommerce.Infrastructure
             this IServiceCollection services,
             IConfiguration configuration)
         {
-            services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(
-                    configuration.GetConnectionString("ECommerceDB")));
+            // 1. Đăng ký Interceptor như một Singleton hoặc Scoped
+            services.AddSingleton<UpdateAuditableInterceptor>();
+
+            services.AddDbContext<AppDbContext>((sp, options) =>
+                    {
+                        // Lấy Interceptor từ Service Provider
+                        var auditableInterceptor = sp.GetRequiredService<UpdateAuditableInterceptor>();
+
+                        options.UseSqlServer(configuration.GetConnectionString("ECommerceDB"))
+                                .AddInterceptors(auditableInterceptor);
+                    }
+                );
 
             services.AddScoped<IProductRepository, ProductRepository>();
             services.AddScoped<ICategoryRepository, CategoryRepository>();

@@ -1,12 +1,13 @@
-﻿using System;
+﻿using ECommerce.Domain.Common;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace ECommerce.Domain.Entities
 {
-    public class Product
+    public class Product : BaseEntity
     {
-        public int Id { get; set; }
+        //public int Id { get; set; }
 
         public string? Name { get; set; }
 
@@ -14,12 +15,12 @@ namespace ECommerce.Domain.Entities
 
         public decimal Price { get; set; }
 
-        public List<ProductImage> Images { get; set; } = new List<ProductImage>();
+        public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
 
         public Category Category { get; set; }
 
-        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+        //public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
-        public DateTime? UpdatedDate { get; set; }
+        //public DateTime? UpdatedDate { get; set; }
     }
 }

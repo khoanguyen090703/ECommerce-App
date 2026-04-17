@@ -1,6 +1,9 @@
 ﻿using ECommerce.Application.Exceptions;
+using ECommerce.Domain.Common;
 using ECommerce.Domain.Entities;
 using ECommerce.Domain.Interfaces;
+using ECommerce.Domain.QueryParameters;
+using ECommerce.Infrastructure.Persistence.Extensions;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -45,6 +48,31 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
                 throw;
             }
             return products;
+        }
+
+        public async Task<PagedResult<Product>> GetAsync(ProductQueryParams parameters)
+        {
+            var query = _context.Products
+                .Include (p => p.Category)
+                .Include (p => p.Images)
+                .AsNoTracking().AsQueryable();
+
+            // Search and Filter
+            if (!string.IsNullOrWhiteSpace(parameters.SearchTerm))
+            {
+                query = query.Where(x => x.Name.Contains(parameters.SearchTerm));
+            }
+
+            // Sort
+            query = parameters.SortBy switch
+            {
+                "name_desc" => query.OrderByDescending(p => p.Name),
+                _ => query.OrderBy(x => x.Id)
+            };
+
+            // Return with pagination
+            return await
+                query.ToPagedListAsync(parameters.PageNumber, parameters.PageSize);
         }
 
         public async Task<Product?> GetByIdAsync(int id)

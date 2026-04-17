@@ -1,5 +1,6 @@
 ﻿using ECommerce.Application.DTOs.Request;
 using ECommerce.Application.Interfaces;
+using ECommerce.Domain.QueryParameters;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ECommerce.Api.Controllers
@@ -18,7 +19,7 @@ namespace ECommerce.Api.Controllers
             _productService = productService;
         }
 
-        [HttpGet]
+        [HttpGet("all")]
         public async Task<IActionResult> GetAll()
         {
             var products = await _productService.GetAllAsync();
@@ -53,6 +54,13 @@ namespace ECommerce.Api.Controllers
         {
             await _productService.DeleteProductByIdAsync(id);
             return NoContent();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Get([FromQuery] ProductQueryParams parameters)
+        {
+            var products = await _productService.GetProductsAsync(parameters);
+            return Ok(products);
         }
     }
 }

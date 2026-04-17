@@ -2,8 +2,10 @@
 using ECommerce.Application.DTOs.Response;
 using ECommerce.Application.Exceptions;
 using ECommerce.Application.Interfaces;
+using ECommerce.Domain.Common;
 using ECommerce.Domain.Entities;
 using ECommerce.Domain.Interfaces;
+using ECommerce.Domain.QueryParameters;
 using FluentValidation;
 using System;
 using System.Collections.Generic;
@@ -35,13 +37,6 @@ namespace ECommerce.Application.Services
 
         public async Task AddAsync(CreateProductRequest request)
         {
-            //var validationResult = await _productValidator.ValidateAsync(request);
-            //if (!validationResult.IsValid)
-            //{
-            //    var errorMessages = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
-            //    throw new FluentValidation.ValidationException(errorMessages);
-            //}
-
             await _createProductRequestValidator.ValidateAndThrowAsync( request );
 
             var category = await _categoryRepository.GetById(request.CategoryId);
@@ -113,6 +108,27 @@ namespace ECommerce.Application.Services
                 UpdatedDate = product.UpdatedDate
             };
             return response;
+        }
+
+        public async Task<PagedResult<ProductResponse4List>> GetProductsAsync(ProductQueryParams parameters)
+        {
+            var pagedProducts = await _productRepository.GetAsync(parameters);
+            var response = pagedProducts.Items.Select(p => new ProductResponse4List
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Price = p.Price,
+                Category = p.Category.Name ?? "",
+                Image = p.Images.FirstOrDefault()?.Url ?? "",
+                CreatedDate = p.CreatedDate,
+                UpdatedDate = p.UpdatedDate
+            }).ToList();
+
+            return new PagedResult<ProductResponse4List>(
+                response,
+                pagedProducts.TotalCount,
+                pagedProducts.PageNumber,
+                pagedProducts.PageSize);
         }
 
         public async Task UpdateProductByIdAsync(int id, UpdateProductRequest request)
