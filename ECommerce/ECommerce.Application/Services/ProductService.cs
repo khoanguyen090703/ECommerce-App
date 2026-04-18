@@ -58,8 +58,6 @@ namespace ECommerce.Application.Services
             {
                 Name = request.Name,
                 Description = request.Description,
-                Price = request.Price,
-                Category = category,
                 Images = productImages
             };
 
@@ -81,8 +79,6 @@ namespace ECommerce.Application.Services
             {
                 Id = p.Id,
                 Name = p.Name,
-                Price = p.Price,
-                Category = p.Category.Name ?? "",
                 Image = p.Images.FirstOrDefault()?.Url ?? "",
                 CreatedDate = p.CreatedDate,
                 UpdatedDate = p.UpdatedDate
@@ -101,8 +97,6 @@ namespace ECommerce.Application.Services
                 Id = id,
                 Name = product.Name,
                 Description= product.Description,
-                Price= product.Price,
-                Category = product.Category.Name ?? "",
                 Images = product.Images.Select(i => i.Url).ToList(),
                 CreatedDate= product.CreatedDate,
                 UpdatedDate = product.UpdatedDate
@@ -117,8 +111,6 @@ namespace ECommerce.Application.Services
             {
                 Id = p.Id,
                 Name = p.Name,
-                Price = p.Price,
-                Category = p.Category.Name ?? "",
                 Image = p.Images.FirstOrDefault()?.Url ?? "",
                 CreatedDate = p.CreatedDate,
                 UpdatedDate = p.UpdatedDate
@@ -145,8 +137,6 @@ namespace ECommerce.Application.Services
 
             product.Name = request.Name;
             product.Description = request.Description;
-            product.Price = request.Price;
-            product.Category = category;
 
             await _productRepository.UpdateAsync(product);
         }

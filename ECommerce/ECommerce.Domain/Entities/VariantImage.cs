@@ -5,10 +5,10 @@ using System.Text;
 
 namespace ECommerce.Domain.Entities
 {
-    public class ProductImage : BaseEntity<int>
+    public class VariantImage : BaseEntity<int>
     {
         public string Url { get; set; } = default!;
 
-        public Product Product { get; set; } = default!;
+        public ProductVariant ProductVariant { get; set; } = default!;
     }
 }

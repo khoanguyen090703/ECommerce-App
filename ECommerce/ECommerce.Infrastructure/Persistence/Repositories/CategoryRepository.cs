@@ -40,13 +40,13 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
             return category;
         }
 
-        public async Task<bool> HasProductsAsync(int id)
-        {
-            var result = await _context.Products
-                .Include(p => p.Category)
-                .AnyAsync(p => p.Category.Id == id);
-            return result;
-        }
+        //public async Task<bool> HasProductsAsync(int id)
+        //{
+        //    var result = await _context.Products
+        //        .Include(p => p.Category)
+        //        .AnyAsync(p => p.Category.Id == id);
+        //    return result;
+        //}
 
         public async Task<bool> IsNameExistedExceptAsync(string name, int id)
         {

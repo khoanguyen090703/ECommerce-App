@@ -38,7 +38,7 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
             try
             {
                 products = await _context.Products
-                    .Include(p => p.Category)
+                    //.Include(p => p.Category)
                     .Include(p => p.Images)
                     .ToListAsync();
 
@@ -53,7 +53,7 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
         public async Task<PagedResult<Product>> GetAsync(ProductQueryParams parameters)
         {
             var query = _context.Products
-                .Include (p => p.Category)
+                //.Include (p => p.Category)
                 .Include (p => p.Images)
                 .AsNoTracking().AsQueryable();
 
@@ -78,7 +78,7 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
         public async Task<Product?> GetByIdAsync(int id)
         {
             var product = await _context.Products
-                .Include (p => p.Category)
+                //.Include (p => p.Category)
                 .Include (p => p.Images)
                 .SingleOrDefaultAsync(p => p.Id == id);
             return product;

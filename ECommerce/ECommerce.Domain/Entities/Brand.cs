@@ -5,12 +5,9 @@ using System.Text;
 
 namespace ECommerce.Domain.Entities
 {
-    public class Category : BaseEntity<int>
+    public class Brand : BaseEntity<int>
     {
-
         public string Name { get; set; } = default!;
-
-        public string? Description { get; set; }
 
         public string? ImageUrl { get; set; }
 

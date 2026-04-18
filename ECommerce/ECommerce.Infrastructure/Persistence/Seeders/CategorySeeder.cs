@@ -14,9 +14,10 @@ namespace ECommerce.Infrastructure.Persistence.Seeders
             {
                 var categories = new List<Category>
             {
-                new Category { Name = "Sua rua mat",Description = "Sua rua mat"},
-                new Category { Name = "Nuoc tay trang",Description = "Nuoc tay trang"},
-                new Category { Name = "Kem duong da",Description = "Kem duong da"}
+                new Category { Name = "Male"},
+                new Category { Name = "Female"},
+                new Category { Name = "Unisex"},
+                new Category { Name = "Niche"},
             };
 
                 await context.Categories.AddRangeAsync(categories);

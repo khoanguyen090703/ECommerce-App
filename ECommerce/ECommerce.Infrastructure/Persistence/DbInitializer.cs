@@ -1,4 +1,6 @@
-﻿using ECommerce.Infrastructure.Persistence.Seeders;
+﻿using ECommerce.Infrastructure.Identity;
+using ECommerce.Infrastructure.Persistence.Seeders;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -10,11 +12,16 @@ namespace ECommerce.Infrastructure.Persistence
 {
     public static class DbInitializer
     {
-        public static async Task InitialiseDatabaseAsync(this IServiceProvider services)
+        public static async Task InitialiseDatabaseAsync(this IServiceProvider serviceProvider)
         {
-            using var scope = services.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var logger = scope.ServiceProvider.GetRequiredService<ILogger<AppDbContext>>();
+            using var scope = serviceProvider.CreateScope();
+            var services = scope.ServiceProvider;
+
+            var context = services.GetRequiredService<AppDbContext>();
+            var logger = services.GetRequiredService<ILogger<AppDbContext>>();
+
+            var userManager = services.GetRequiredService<UserManager<AppUser>>();
+            var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
 
             try
             {
@@ -25,8 +32,11 @@ namespace ECommerce.Infrastructure.Persistence
                 }
 
                 // 2. Gọi các hàm Seed
+                await RoleSeeder.SeedAsync(roleManager);
+                await AppUserSeeder.SeedAsync(userManager, roleManager);
+
                 await CategorySeeder.SeedAsync(context);
-                // await ProductSeeder.SeedAsync(context); // Ví dụ thêm seeder khác
+                
             }
             catch (Exception ex)
             {

@@ -4,9 +4,9 @@ using System.Text;
 
 namespace ECommerce.Domain.Common
 {
-    public abstract class BaseEntity : IAuditableEntity
+    public abstract class BaseEntity<TId> : IAuditableEntity
     {
-        public int Id { get; set; }
+        public TId Id { get; set; } = default!;
 
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
