@@ -34,14 +34,14 @@ namespace ECommerce.Api.Controllers
             return Created();
         }
 
-        [HttpPut("/{id:int}")]
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> Update([FromBody] UpdateCategoryRequest request, int id)
         {
             await _categoryService.UpdateCategoryByIdAsync(id, request);
             return NoContent();
         }
 
-        [HttpDelete("/{id:int}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
             await _categoryService.DeleteCategoryByIdAsync(id);

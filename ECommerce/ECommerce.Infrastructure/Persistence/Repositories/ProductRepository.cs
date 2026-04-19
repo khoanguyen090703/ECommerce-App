@@ -40,6 +40,9 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
                 products = await _context.Products
                     //.Include(p => p.Category)
                     .Include(p => p.Images)
+                    .Include(p => p.Categories)
+                    .Include(p => p.ProductVariants)
+                    .Include(p => p.Reviews)
                     .ToListAsync();
 
             }
@@ -55,6 +58,9 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
             var query = _context.Products
                 //.Include (p => p.Category)
                 .Include (p => p.Images)
+                .Include(p => p.Categories)
+                .Include(p => p.ProductVariants)
+                .Include(p => p.Reviews)
                 .AsNoTracking().AsQueryable();
 
             // Search and Filter
@@ -80,6 +86,9 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
             var product = await _context.Products
                 //.Include (p => p.Category)
                 .Include (p => p.Images)
+                .Include(p => p.Categories)
+                .Include(p => p.ProductVariants).ThenInclude(pv => pv.Images)
+                .Include(p => p.Reviews).ThenInclude(r => r.ReviewResponses)
                 .SingleOrDefaultAsync(p => p.Id == id);
             return product;
         }

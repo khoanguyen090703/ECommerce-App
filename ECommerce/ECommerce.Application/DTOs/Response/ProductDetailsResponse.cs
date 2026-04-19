@@ -1,7 +1,5 @@
-﻿using ECommerce.Domain.Entities;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace ECommerce.Application.DTOs.Response
 {
@@ -9,15 +7,25 @@ namespace ECommerce.Application.DTOs.Response
     {
         public int Id { get; set; }
 
-        public string? Name { get; set; }
+        public string Name { get; set; } = default!;
 
-        public string? Description { get; set; }
+        public string Description { get; set; } = default!;
 
-        public decimal Price { get; set; }
+        public List<string> ImageUrls { get; set; } = new List<string>();
 
-        public List<string> Images { get; set; }
+        public string ScentFamilies { get; set; } = default!; // comma separated
 
-        public string Category { get; set; }
+        public string Categories { get; set; } = default!; // comma separated
+
+        public List<ProductVariantResponse> Variants { get; set; } = new List<ProductVariantResponse>();
+
+        public List<ReviewDetailsResponse> Reviews { get; set; } = new List<ReviewDetailsResponse>();
+
+        public int TotalReviews { get; set; }
+
+        public double AverageRating { get; set; }
+
+        public string Status { get; set; } = default!;
 
         public DateTime CreatedDate { get; set; }
 

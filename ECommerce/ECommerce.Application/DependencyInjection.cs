@@ -14,6 +14,8 @@ namespace ECommerce.Application
         {
             services.AddScoped<IProductService, ProductService>();
             services.AddScoped<ICategoryService, CategoryService>();
+            services.AddScoped<IBrandService, BrandService>();
+            services.AddScoped<IScentFamilyService, ScentFamilyService>();
 
             return services;
         }

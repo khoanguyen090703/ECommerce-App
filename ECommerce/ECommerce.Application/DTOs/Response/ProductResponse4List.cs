@@ -1,6 +1,7 @@
-﻿using ECommerce.Domain.Entities;
+﻿using ECommerce.Domain.Enums;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace ECommerce.Application.DTOs.Response
@@ -9,13 +10,19 @@ namespace ECommerce.Application.DTOs.Response
     {
         public int Id { get; set; }
 
-        public string? Name { get; set; }
+        public string Name { get; set; } = default!;
 
-        public decimal Price { get; set; }
+        public string ImageUrl { get; set; } = default!;
 
-        public string Image { get; set; }
+        public string Categories { get; set; } = default!; // comma separated names
 
-        public string Category { get; set; }
+        public int TotalVariants { get; set; }
+
+        public int TotalReviews { get; set; }
+
+        public double AverageRating { get; set; }
+
+        public ProductStatus Status { get; set; }
 
         public DateTime CreatedDate { get; set; }
 

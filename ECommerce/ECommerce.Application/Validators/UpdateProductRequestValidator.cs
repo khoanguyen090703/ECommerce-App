@@ -16,11 +16,19 @@ namespace ECommerce.Application.Validators
             RuleFor(c => c.Description)
                 .NotEmpty().WithMessage("Product description is required.");
 
-            RuleFor(c => c.Price)
-                .NotEmpty().WithMessage("Product price is required.");
+            RuleFor(c => c.BrandId)
+                .GreaterThan(0).WithMessage("Product's brand id is required.");
 
-            RuleFor(c => c.CategoryId)
-                .NotEmpty().WithMessage("Product's category id is required.");
+            RuleFor(c => c.CategoryIds)
+                .NotEmpty().WithMessage("At least one category id is required.");
+
+            RuleFor(c => c.Images)
+                .NotNull()
+                .Must(list => list != null && list.Count == 1)
+                .WithMessage("Product must have exactly one image.");
+
+            RuleFor(c => c.Concentration)
+                .NotNull().WithMessage("Concentration is required.");
         }
     }
 }

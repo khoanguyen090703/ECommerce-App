@@ -18,7 +18,7 @@ namespace ECommerce.Domain.Entities
 
         public decimal Price { get; set; }
 
-        public int StockQuantity { get; set; } = default;
+        public int StockQuantity { get; set; } = 1;
 
         public VariantStatus Status { get; set; } = VariantStatus.Available;
 

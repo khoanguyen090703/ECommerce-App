@@ -12,7 +12,7 @@ namespace ECommerce.Domain.Entities
 
         public string Description { get; set; } = default!;
 
-        public ProductConcentration Concentration { get; set; }
+        public ProductConcentration Concentration { get; set; } = ProductConcentration.EDP;
 
         public Brand Brand { get; set; } = default!;
 

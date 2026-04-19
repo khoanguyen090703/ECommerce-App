@@ -21,7 +21,6 @@
 
   <ItemGroup>
     <Folder Include="Common\Models\" />
-    <Folder Include="Mappings\" />
   </ItemGroup>
 
 </Project>

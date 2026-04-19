@@ -44,8 +44,8 @@ namespace ECommerce.Application.Services
             if (category == null)
                 throw new NotFoundException($"Category with id {id} not found.");
 
-            //if (await _categoryRepository.HasProductsAsync(id))
-            //    throw new ConflictException($"Category with id {id} can not be deleted because it has products.");
+            if (await _categoryRepository.HasProductsAsync(id))
+                throw new ConflictException($"Category with id {id} can not be deleted because it has products.");
 
             await _categoryRepository.DeleteAsync(category);
         }
