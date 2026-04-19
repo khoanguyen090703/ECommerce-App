@@ -8,7 +8,7 @@ namespace ECommerce.Application.DTOs.Request
 {
     public class CreateProductRequest
     {
-        public string Name { get; set; } = default!;
+        // Name is generated from Brand + Line + Concentration
 
         public string Description { get; set; } = default!;
 

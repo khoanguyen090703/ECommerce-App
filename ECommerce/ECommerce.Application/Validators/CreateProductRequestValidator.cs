@@ -10,8 +10,7 @@ namespace ECommerce.Application.Validators
     {
         public CreateProductRequestValidator()
         {
-            RuleFor(x => x.Name)
-                .NotEmpty().WithMessage("Product name is required.");
+            // Name is generated on server; do not accept from client
 
             RuleFor(x => x.Description)
                 .NotEmpty().WithMessage("Product description is required.");
@@ -39,7 +38,6 @@ namespace ECommerce.Application.Validators
     {
         public CreateProductVariantRequestValidator()
         {
-            RuleFor(x => x.Name).NotEmpty().WithMessage("Variant name is required.");
             RuleFor(x => x.Price).GreaterThanOrEqualTo(0).WithMessage("Variant price must be >= 0.");
             RuleFor(x => x.Volumn).GreaterThanOrEqualTo(0).WithMessage("Variant volumn must be >= 0.");
             RuleFor(x => x.StockQuantity).GreaterThanOrEqualTo(0).WithMessage("Variant stock quantity must be >= 0.");

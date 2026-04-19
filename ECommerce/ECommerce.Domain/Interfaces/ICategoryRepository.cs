@@ -19,6 +19,8 @@ namespace ECommerce.Domain.Interfaces
 
         Task<bool> IsNameExistedExceptAsync(string name, int id);
 
+        Task<bool> IsNameExistedAsync(string name);
+
         Task<bool> HasProductsAsync(int id);
     }
 }

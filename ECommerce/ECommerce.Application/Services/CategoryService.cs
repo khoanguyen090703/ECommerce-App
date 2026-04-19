@@ -30,11 +30,16 @@ namespace ECommerce.Application.Services
         {
             await _createCategoryRequestValidator.ValidateAndThrowAsync(request);
 
+            // Check name uniqueness
+            if (await _categoryRepository.IsNameExistedAsync(request.Name))
+                throw new ConflictException($"Category with name '{request.Name}' already exists.");
+
             var category = new Category
             {
                 Name = request.Name,
                 Description = request.Description
             };
+
             await _categoryRepository.AddAsync(category);
         }
 
@@ -70,10 +75,13 @@ namespace ECommerce.Application.Services
 
             await _updateCategoryRequestValidator.ValidateAndThrowAsync(request);
 
-            if (await _categoryRepository.IsNameExistedExceptAsync(request.Name, id))
-                throw new ConflictException($"{request.Name} is existed with another category.");
-
-            category.Name = request.Name;
+            // Only check uniqueness when name is changed
+            if (!string.Equals(category.Name, request.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                if (await _categoryRepository.IsNameExistedExceptAsync(request.Name, id))
+                    throw new ConflictException($"{request.Name} is existed with another category.");
+                category.Name = request.Name;
+            }
             category.Description = request.Description;
             await _categoryRepository.UpdateAsync(category);
         }

@@ -93,6 +93,11 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
             return product;
         }
 
+        public async Task<bool> IsNameExistedAsync(string name)
+        {
+            return await _context.Products.AnyAsync(p => p.Name == name);
+        }
+
         public async Task UpdateAsync(Product product)
         {
             _context.Products.Update(product);

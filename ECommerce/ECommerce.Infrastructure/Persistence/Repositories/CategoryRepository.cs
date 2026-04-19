@@ -53,6 +53,12 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
             return result;
         }
 
+        public async Task<bool> IsNameExistedAsync(string name)
+        {
+            var result = await _context.Categories.AnyAsync(c => c.Name.Equals(name));
+            return result;
+        }
+
         public async Task UpdateAsync(Category category)
         {
             _context.Categories.Update(category);

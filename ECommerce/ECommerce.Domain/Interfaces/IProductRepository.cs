@@ -20,5 +20,6 @@ namespace ECommerce.Domain.Interfaces
         Task DeleteAsync(Product product);
 
         Task<PagedResult<Product>> GetAsync(ProductQueryParams parameters);
+        Task<bool> IsNameExistedAsync(string name);
     }
 }

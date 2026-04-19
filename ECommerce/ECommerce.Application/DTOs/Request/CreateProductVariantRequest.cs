@@ -6,8 +6,6 @@ namespace ECommerce.Application.DTOs.Request
 {
     public class CreateProductVariantRequest
     {
-        public string Name { get; set; } = default!;
-
         public VariantFormat Format { get; set; }
 
         public int Volumn { get; set; }

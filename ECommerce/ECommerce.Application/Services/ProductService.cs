@@ -61,13 +61,26 @@ namespace ECommerce.Application.Services
             // Product images
             var productImages = request.Images.Select(i => new ProductImage { Url = i }).ToList();
 
-            // Variants
+            // Validate duplicate variants by (Format, Volumn)
+            var duplicateGroups = request.Variants
+                .GroupBy(x => new { x.Format, x.Volumn })
+                .Where(g => g.Count() > 1)
+                .ToList();
+
+            if (duplicateGroups.Any())
+            {
+                var pairs = duplicateGroups
+                    .Select(g => $"Format={g.Key.Format}, Volumn={g.Key.Volumn}")
+                    .ToList();
+                throw new ConflictException($"Duplicate variants detected for: {string.Join("; ", pairs)}. Each variant must have unique (Format, Volumn).");
+            }
+
+            // Variants: generate variant names from product name + format + volumn + unit
             var productVariants = new List<ProductVariant>();
             foreach (var v in request.Variants)
             {
                 var variant = new ProductVariant
                 {
-                    Name = v.Name,
                     Format = v.Format,
                     Volumn = v.Volumn,
                     Price = v.Price,
@@ -77,9 +90,22 @@ namespace ECommerce.Application.Services
                 productVariants.Add(variant);
             }
 
+            // Generate product name from Brand + Line + Concentration using helper
+            var generatedProductName = NameGenerators.GenerateProductName(brand.Name, request.Line, request.Concentration);
+
+            // Check if product name already exists
+            if (await _productRepository.IsNameExistedAsync(generatedProductName))
+                throw new ConflictException($"Product with name '{generatedProductName}' already exists.");
+
+            // Set variant names using generated product name
+            foreach (var pv in productVariants)
+            {
+                pv.Name = NameGenerators.GenerateVariantName(generatedProductName, pv.Format, pv.Volumn, pv.Unit);
+            }
+
             var product = new Product
             {
-                Name = request.Name,
+                Name = generatedProductName,
                 Description = request.Description,
                 Brand = brand,
                 Line = request.Line ?? string.Empty,
@@ -89,6 +115,8 @@ namespace ECommerce.Application.Services
                 Categories = categories,
                 ProductVariants = productVariants
             };
+
+            
 
             await _productRepository.AddAsync(product);
         }
@@ -159,12 +187,28 @@ namespace ECommerce.Application.Services
             }
 
             // Update allowed fields only (do not modify TotalReviews, AverageRating, Status, ProductVariants, Reviews)
-            product.Name = request.Name;
+            var previousName = product.Name;
+
             product.Description = request.Description;
             product.Brand = brand;
             product.Line = request.Line ?? product.Line;
             product.ReleaseYear = request.ReleaseYear;
             product.Concentration = request.Concentration;
+
+            // If name changed, ensure uniqueness and update variant names accordingly
+            if (!string.Equals(previousName, request.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                if (await _productRepository.IsNameExistedAsync(request.Name))
+                    throw new ConflictException($"Product with name '{request.Name}' already exists.");
+
+                product.Name = request.Name;
+
+                // Update variant names based on new product name
+                foreach (var pv in product.ProductVariants)
+                {
+                    pv.Name = NameGenerators.GenerateVariantName(product.Name, pv.Format, pv.Volumn, pv.Unit);
+                }
+            }
 
             // Replace categories
             product.Categories.Clear();
