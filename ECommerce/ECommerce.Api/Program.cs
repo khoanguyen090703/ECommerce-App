@@ -1,9 +1,11 @@
 using ECommerce.Api.ErrorHandlers;
+using ECommerce.Api.Filters;
 using ECommerce.Application;
 using ECommerce.Application.Validators;
 using ECommerce.Infrastructure;
 using ECommerce.Infrastructure.Persistence;
 using FluentValidation;
+using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,8 +13,24 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header
+    });
+
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = new List<string>()
+    });
+
+    options.OperationFilter<SecurityRequirementsOperationFilter>();
+});
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
@@ -26,7 +44,6 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     await app.Services.InitialiseDatabaseAsync();
-    app.MapOpenApi();
     app.UseSwagger();
     app.UseSwaggerUI();
 }

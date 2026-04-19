@@ -13,12 +13,12 @@ namespace ECommerce.Infrastructure.Persistence.Seeders
             if (!await context.Categories.AnyAsync())
             {
                 var categories = new List<Category>
-            {
-                new Category { Name = "Male"},
-                new Category { Name = "Female"},
-                new Category { Name = "Unisex"},
-                new Category { Name = "Niche"},
-            };
+                {
+                    new Category { Name = "Male"},
+                    new Category { Name = "Female"},
+                    new Category { Name = "Unisex"},
+                    new Category { Name = "Niche"},
+                };
 
                 await context.Categories.AddRangeAsync(categories);
                 await context.SaveChangesAsync();

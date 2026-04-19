@@ -36,6 +36,8 @@ namespace ECommerce.Infrastructure.Persistence
                 await AppUserSeeder.SeedAsync(userManager, roleManager);
 
                 await CategorySeeder.SeedAsync(context);
+                await BrandSeeder.SeedAsync(context);
+                await ScentFamilySeeder.SeedAsync(context);
                 
             }
             catch (Exception ex)
