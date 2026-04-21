@@ -83,11 +83,52 @@ namespace ECommerce.Application.Services
             await _productVariantRepository.UpdateAsync(variant);
         }
 
+        public async Task UpdateVariantStatusByIdAsync(int variantId, ECommerce.Domain.Enums.VariantStatus status)
+        {
+            var variant = await _productVariantRepository.GetByIdForUpdateAsync(variantId);
+            if (variant == null)
+                throw new ECommerce.Application.Exceptions.NotFoundException($"Variant with id {variantId} not found.");
+
+            // 1. if same status -> conflict
+            if (variant.Status == status)
+                throw new ECommerce.Application.Exceptions.ConflictException($"Variant with id {variantId} is already {status}.");
+
+            // 2. if current is Discontinued -> cannot update
+            if (variant.Status == ECommerce.Domain.Enums.VariantStatus.Discontinued)
+                throw new ECommerce.Application.Exceptions.ConflictException("Cannot update a discontinued variant.");
+
+            // 3. If changing between Available and OutOfStock, validate stock quantity
+            if ((variant.Status == ECommerce.Domain.Enums.VariantStatus.Available && status == ECommerce.Domain.Enums.VariantStatus.OutOfStock) ||
+                (variant.Status == ECommerce.Domain.Enums.VariantStatus.OutOfStock && status == ECommerce.Domain.Enums.VariantStatus.Available) ||
+                (status == ECommerce.Domain.Enums.VariantStatus.OutOfStock) || (status == ECommerce.Domain.Enums.VariantStatus.Available))
+            {
+                // When marking OutOfStock, ensure stock == 0
+                if (status == ECommerce.Domain.Enums.VariantStatus.OutOfStock && variant.StockQuantity > 0)
+                    throw new ECommerce.Application.Exceptions.ConflictException("Cannot mark variant OutOfStock while stock quantity is greater than 0.");
+
+                // When marking Available, ensure stock > 0
+                if (status == ECommerce.Domain.Enums.VariantStatus.Available && variant.StockQuantity <= 0)
+                    throw new ECommerce.Application.Exceptions.ConflictException("Cannot mark variant Available while stock quantity is 0.");
+            }
+
+            variant.Status = status;
+            await _productVariantRepository.UpdateAsync(variant);
+        }
+
         public async Task<PagedResult<VariantResponse>> GetVariantsAsync(VariantQueryParams parameters)
         {
             var paged = await _productRepository.GetVariantsAsync(parameters);
             var mapped = paged.Items.Select(v => v.ToVariantResponse()).ToList();
             return new PagedResult<VariantResponse>(mapped, paged.TotalCount, paged.PageNumber, paged.PageSize);
+        }
+
+        public async Task DeleteVariantByIdAsync(int variantId)
+        {
+            var variant = await _productVariantRepository.GetByIdAsync(variantId);
+            if (variant == null)
+                throw new ECommerce.Application.Exceptions.NotFoundException($"Variant with id {variantId} not found.");
+
+            await _productVariantRepository.DeleteAsync(variant);
         }
     }
 }

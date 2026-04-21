@@ -16,6 +16,12 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
             _context = context;
         }
 
+        public async Task DeleteAsync(ProductVariant variant)
+        {
+            _context.ProductVariants.Remove(variant);
+            await _context.SaveChangesAsync();
+        }
+
         public async Task<ProductVariant?> GetByIdAsync(int id)
         {
             var variant = await _context.ProductVariants

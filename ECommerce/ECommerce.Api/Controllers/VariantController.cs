@@ -53,13 +53,24 @@ namespace ECommerce.Api.Controllers
             await _variantService.UpdateVariantByIdAsync(id, request);
             return NoContent();
         }
+        [HttpPatch("{id:int:min(1)}/status")]
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] ECommerce.Application.DTOs.Request.UpdateVariantStatusRequest request)
+        {
+            if (id <= 0)
+                return BadRequest("Invalid variant id.");
+
+            await _variantService.UpdateVariantStatusByIdAsync(id, request.Status);
+            return NoContent();
+        }
+
+
 
         [HttpDelete("{id:int:min(1)}")]
         public async Task<IActionResult> Delete(int id)
         {
             if (id <= 0)
                 return BadRequest("Invalid variant id.");
-
+            await _variantService.DeleteVariantByIdAsync(id);
             return NoContent();
         }
     }

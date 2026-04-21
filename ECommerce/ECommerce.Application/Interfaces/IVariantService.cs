@@ -12,5 +12,9 @@ namespace ECommerce.Application.Interfaces
         Task<List<VariantResponse>> GetAllVariantsAsync();
         Task<ProductVariantDetailsResponse?> GetVariantDetailsByIdAsync(int variantId);
         Task UpdateVariantByIdAsync(int variantId, ECommerce.Application.DTOs.Request.UpdateVariantRequest request);
+
+        Task UpdateVariantStatusByIdAsync(int variantId, ECommerce.Domain.Enums.VariantStatus status);
+
+        Task DeleteVariantByIdAsync(int variantId);
     }
 }

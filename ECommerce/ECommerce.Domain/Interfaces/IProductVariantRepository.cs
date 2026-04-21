@@ -10,5 +10,6 @@ namespace ECommerce.Domain.Interfaces
         Task<ProductVariant?> GetByIdAsync(int id);
         Task<ProductVariant?> GetByIdForUpdateAsync(int id);
         Task UpdateAsync(ProductVariant variant);
+        Task DeleteAsync(ProductVariant variant);
     }
 }
