@@ -53,6 +53,15 @@ namespace ECommerce.Api.Controllers
             await _variantService.UpdateVariantByIdAsync(id, request);
             return NoContent();
         }
+        [HttpPost("product/{productId:int:min(1)}")]
+        public async Task<IActionResult> Create(int productId, [FromBody] ECommerce.Application.DTOs.Request.CreateVariantRequest request)
+        {
+            if (productId <= 0)
+                return BadRequest("Invalid product id.");
+
+            var newId = await _variantService.CreateVariantAsync(productId, request);
+            return CreatedAtAction(nameof(GetById), new { id = newId }, null);
+        }
         [HttpPatch("{id:int:min(1)}/status")]
         public async Task<IActionResult> UpdateStatus(int id, [FromBody] ECommerce.Application.DTOs.Request.UpdateVariantStatusRequest request)
         {

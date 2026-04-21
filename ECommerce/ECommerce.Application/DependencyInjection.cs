@@ -22,6 +22,8 @@ namespace ECommerce.Application
 
             // Register validators
             services.AddTransient<FluentValidation.IValidator<UpdateVariantRequest>, UpdateVariantRequestValidator>();
+            services.AddTransient<FluentValidation.IValidator<ECommerce.Application.DTOs.Request.CreateVariantRequest>, CreateVariantRequestValidator>();
+            services.AddTransient<FluentValidation.IValidator<CreateVariantRequest>, CreateVariantRequestValidator>();
 
             return services;
         }

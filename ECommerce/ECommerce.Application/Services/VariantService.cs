@@ -16,15 +16,18 @@ namespace ECommerce.Application.Services
         private readonly IProductRepository _productRepository;
         private readonly IProductVariantRepository _productVariantRepository;
         private readonly FluentValidation.IValidator<ECommerce.Application.DTOs.Request.UpdateVariantRequest> _updateValidator;
+        private readonly FluentValidation.IValidator<ECommerce.Application.DTOs.Request.CreateVariantRequest> _createValidator;
 
         public VariantService(
             IProductRepository productRepository,
             IProductVariantRepository productVariantRepository,
-            FluentValidation.IValidator<ECommerce.Application.DTOs.Request.UpdateVariantRequest> updateValidator)
+            FluentValidation.IValidator<ECommerce.Application.DTOs.Request.UpdateVariantRequest> updateValidator,
+            FluentValidation.IValidator<ECommerce.Application.DTOs.Request.CreateVariantRequest> createValidator)
         {
             _productRepository = productRepository;
             _productVariantRepository = productVariantRepository;
             _updateValidator = updateValidator;
+            _createValidator = createValidator;
         }
 
         public async Task<List<VariantResponse>> GetAllVariantsAsync()
@@ -40,6 +43,41 @@ namespace ECommerce.Application.Services
                 return null;
 
             return variant.ToDetailsResponse();
+        }
+
+        public async Task<int> CreateVariantAsync(int productId, ECommerce.Application.DTOs.Request.CreateVariantRequest request)
+        {
+            // Validate
+            if (_createValidator != null)
+            {
+                await _createValidator.ValidateAndThrowAsync(request);
+            }
+
+            var product = await _productRepository.GetByIdAsync(productId);
+            if (product == null)
+                throw new ECommerce.Application.Exceptions.NotFoundException($"Product with id {productId} not found.");
+
+            // check duplicate format-volumn within same product
+            var duplicate = ECommerce.Application.Helpers.VariantHelper.ExistsFormatVolumnDuplicate(product.ProductVariants, request.Format, request.Volumn, null);
+            if (duplicate)
+                throw new ECommerce.Application.Exceptions.ConflictException($"A variant with format {request.Format} and volumn {request.Volumn} already exists for this product.");
+
+            var variant = new ECommerce.Domain.Entities.ProductVariant
+            {
+                Format = request.Format,
+                Volumn = request.Volumn,
+                Price = request.Price,
+                StockQuantity = request.StockQuantity,
+                Images = request.Images.Select(u => new ECommerce.Domain.Entities.VariantImage { Url = u }).ToList()
+            };
+
+            variant.Name = NameGenerators.GenerateVariantName(product.Name, variant.Format, variant.Volumn, variant.Unit);
+
+            // add to product and save
+            product.ProductVariants.Add(variant);
+            await _productRepository.UpdateAsync(product);
+
+            return variant.Id;
         }
 
         public async Task UpdateVariantByIdAsync(int variantId, ECommerce.Application.DTOs.Request.UpdateVariantRequest request)
@@ -59,7 +97,7 @@ namespace ECommerce.Application.Services
                 throw new ECommerce.Application.Exceptions.NotFoundException($"Parent product for variant id {variantId} not found.");
 
             // Check duplicate: other variants under same product
-            var hasDuplicate = product.ProductVariants.Any(v => v.Id != variantId && v.Format == request.Format && v.Volumn == request.Volumn);
+            var hasDuplicate = ECommerce.Application.Helpers.VariantHelper.ExistsFormatVolumnDuplicate(product.ProductVariants, request.Format, request.Volumn, variantId);
             if (hasDuplicate)
                 throw new ECommerce.Application.Exceptions.ConflictException($"Another variant with format {request.Format} and volumn {request.Volumn} already exists for this product.");
 
