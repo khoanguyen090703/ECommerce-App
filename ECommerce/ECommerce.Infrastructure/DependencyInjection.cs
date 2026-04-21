@@ -75,6 +75,8 @@ namespace ECommerce.Infrastructure
             services.AddScoped<ICategoryRepository, CategoryRepository>();
             services.AddScoped<IBrandRepository, BrandRepository>();
             services.AddScoped<IScentFamilyRepository, ScentFamilyRepository>();
+            services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
+            // Register variant/variant service is via product repository; no separate repo
 
             return services;
         }

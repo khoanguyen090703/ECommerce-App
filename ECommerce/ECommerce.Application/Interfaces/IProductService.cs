@@ -16,7 +16,11 @@ namespace ECommerce.Application.Interfaces
 
         Task<ProductDetailsResponse?> GetProductByIdAsync(int id);
 
+        Task<ProductWithVariantsResponse?> GetProductWithVariantsByVariantIdAsync(int variantId);
+
         Task UpdateProductByIdAsync(int id, UpdateProductRequest request);
+
+        Task UpdateProductStatusAsync(int id, ECommerce.Domain.Enums.ProductStatus status);
 
         Task DeleteProductByIdAsync(int id);
 

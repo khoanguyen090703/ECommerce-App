@@ -21,5 +21,10 @@ namespace ECommerce.Domain.Interfaces
 
         Task<PagedResult<Product>> GetAsync(ProductQueryParams parameters);
         Task<bool> IsNameExistedAsync(string name);
+        Task<PagedResult<ProductVariant>> GetVariantsAsync(ECommerce.Domain.QueryParameters.VariantQueryParams parameters);
+        Task<ProductVariant?> GetVariantByIdAsync(int id);
+        Task<ProductVariant?> GetVariantByIdForUpdateAsync(int id);
+        Task UpdateVariantAsync(ProductVariant variant);
+        Task UpdateProductStatusAsync(int id, ECommerce.Domain.Enums.ProductStatus status);
     }
 }

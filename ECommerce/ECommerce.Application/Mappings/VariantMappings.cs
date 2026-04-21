@@ -22,5 +22,24 @@ namespace ECommerce.Application.Mappings
                 ImageUrls = v.Images.Select(i => i.Url).ToList()
             };
         }
+
+        public static ProductVariantDetailsResponse ToDetailsResponse(this ProductVariant v)
+        {
+            return new ProductVariantDetailsResponse
+            {
+                Id = v.Id,
+                Name = v.Name,
+                Format = v.Format.ToString(),
+                Volumn = v.Volumn,
+                Unit = v.Unit,
+                Price = v.Price,
+                StockQuantity = v.StockQuantity,
+                Status = v.Status.ToString(),
+                SoldQuantity = v.SoldQuantity,
+                ImageUrls = v.Images.Select(i => i.Url).ToList(),
+                CreatedDate = v.CreatedDate,
+                UpdatedDate = v.UpdatedDate
+            };
+        }
     }
 }

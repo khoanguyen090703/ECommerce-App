@@ -42,10 +42,30 @@ namespace ECommerce.Api.Controllers
             return Ok(products);
         }
 
+        [HttpGet("variant/{variantId:int:min(1)}")]
+        public async Task<IActionResult> GetVariantsByVariantId(int variantId)
+        {
+            if (variantId <= 0)
+                return BadRequest("Invalid variant id.");
+
+            var resp = await _productService.GetProductWithVariantsByVariantIdAsync(variantId);
+            return Ok(resp);
+        }
+
         [HttpPut("{id:int:min(1)}")]
         public async Task<IActionResult> Update([FromBody] UpdateProductRequest request, int id)
         {
             await _productService.UpdateProductByIdAsync(id, request);
+            return NoContent();
+        }
+
+        [HttpPatch("{id:int:min(1)}/status")]
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] ECommerce.Application.DTOs.Request.UpdateProductStatusRequest request)
+        {
+            if (id <= 0)
+                return BadRequest("Invalid product id.");
+
+            await _productService.UpdateProductStatusAsync(id, request.Status);
             return NoContent();
         }
 

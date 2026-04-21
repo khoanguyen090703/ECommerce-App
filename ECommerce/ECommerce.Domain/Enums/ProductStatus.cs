@@ -8,6 +8,7 @@ namespace ECommerce.Domain.Enums
     {
         Draft,
         Active,
+        Inactive,
         Archived
     }
 }

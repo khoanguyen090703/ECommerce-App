@@ -150,6 +150,19 @@ namespace ECommerce.Application.Services
             return product.ToDetailsResponse();
         }
 
+        public async Task<ProductWithVariantsResponse?> GetProductWithVariantsByVariantIdAsync(int variantId)
+        {
+            var variant = await _productRepository.GetVariantByIdAsync(variantId);
+            if (variant == null)
+                throw new NotFoundException($"Variant with id {variantId} not found.");
+
+            var product = variant.Product;
+            if (product == null)
+                throw new NotFoundException($"Parent product for variant id {variantId} not found.");
+
+            return product.ToProductWithVariantsResponse();
+        }
+
         public async Task<PagedResult<ProductResponse4List>> GetProductsAsync(ProductQueryParams parameters)
         {
             var pagedProducts = await _productRepository.GetAsync(parameters);
@@ -229,6 +242,57 @@ namespace ECommerce.Application.Services
             }
             */
 
+            await _productRepository.UpdateAsync(product);
+        }
+
+        public async Task UpdateProductStatusAsync(int id, ProductStatus status)
+        {
+            var product = await _productRepository.GetByIdAsync(id);
+            if (product == null)
+                throw new NotFoundException($"Product with id {id} not found.");
+            
+            // Same status
+            if (status == product.Status)
+                throw new ConflictException($"Product with id {id} is already {status}.");
+
+            // Update to Draft is not allowed
+            if (status == ProductStatus.Draft)
+                throw new ConflictException("Updating product to Draft status is not allowed.");
+
+            // Update Archived product is not allowed 
+            if (product.Status == ProductStatus.Archived)
+                throw new ConflictException("Product with id {id} is archived, cannot be updated to any status.");
+
+            // Update from Draft to Active, ensure product has variants and at least one variant has stock > 0
+            if (status == ProductStatus.Active)
+            {
+                // When activating from Draft -> Active, ensure product has variants
+                if (product.ProductVariants == null || !product.ProductVariants.Any())
+                    throw new ConflictException("Product has no variants. Please add at least one variant before activating the product.");
+
+                // Ensure at least one variant has stock > 0
+                var anyWithStock = product.ProductVariants.Any(v => v.StockQuantity > 0);
+                if (!anyWithStock)
+                    throw new ConflictException("All variants have stock equal to 0. Please add stock to at least one variant before activating the product.");
+            }
+
+            // Update from Draft to Inactive is not allowed
+            if (product.Status == ProductStatus.Draft && status == ProductStatus.Inactive)
+            {
+                throw new ConflictException("Update Draft product to Inactive is not allowed.");
+            }
+
+            
+
+            // Rule 2: To Active, ensure product has at least one variant
+            if (status == ProductStatus.Active)
+            {
+                if (product.ProductVariants == null || !product.ProductVariants.Any())
+                    throw new ConflictException("Product has no variants. Add variants or remove the product completely.");
+            }
+
+            // All checks passed, update status
+            product.Status = status;
             await _productRepository.UpdateAsync(product);
         }
     }

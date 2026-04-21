@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Text;
+using ECommerce.Application.DTOs.Request;
 using ECommerce.Application.Interfaces;
 using ECommerce.Application.Services;
+using ECommerce.Application.Validators;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ECommerce.Application
@@ -15,7 +17,11 @@ namespace ECommerce.Application
             services.AddScoped<IProductService, ProductService>();
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<IBrandService, BrandService>();
+            services.AddScoped<IVariantService, VariantService>();
             services.AddScoped<IScentFamilyService, ScentFamilyService>();
+
+            // Register validators
+            services.AddTransient<FluentValidation.IValidator<UpdateVariantRequest>, UpdateVariantRequestValidator>();
 
             return services;
         }
