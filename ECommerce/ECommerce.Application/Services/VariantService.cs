@@ -160,6 +160,89 @@ namespace ECommerce.Application.Services
             return new PagedResult<VariantResponse>(mapped, paged.TotalCount, paged.PageNumber, paged.PageSize);
         }
 
+        public async Task SetFeaturedVariantsAsync(IEnumerable<int> variantIds)
+        {
+            var ids = variantIds?.ToList() ?? new List<int>();
+
+            // Load requested variants with product info
+            var variants = await _productVariantRepository.GetByIdsForUpdateAsync(ids);
+
+            // Validate existence
+            var foundIds = variants.Select(v => v.Id).ToHashSet();
+            var notFound = ids.Where(i => !foundIds.Contains(i)).ToList();
+            if (notFound.Any())
+                throw new ECommerce.Application.Exceptions.NotFoundException($"Variants not found: {string.Join(",", notFound)}");
+
+            // Validate statuses: variant must be Available and product must be Active
+            var invalids = variants.Where(v => v.Status != ECommerce.Domain.Enums.VariantStatus.Available || v.Product == null || v.Product.Status != ECommerce.Domain.Enums.ProductStatus.Active).ToList();
+            if (invalids.Any())
+            {
+                var messages = invalids.Select(v => $"Variant {v.Id} status {v.Status} or product status {v.Product?.Status.ToString() ?? "<null>"} invalid").ToList();
+                throw new ECommerce.Application.Exceptions.ConflictException(string.Join("; ", messages));
+            }
+
+            var currentFeatured = await _productRepository.GetFeaturedDefaultVariantsAsync();
+            if (!currentFeatured.Any())
+            {
+                // No existing featured variants, simply set requested ones as featured
+                foreach (var v in variants)
+                {
+                    v.IsDefault = true;
+                    v.Product.IsFeatured = true;
+                }
+
+            }
+            else
+            {
+                // There are existing featured variants, need to update accordingly
+                var currentFeaturedIds = currentFeatured.Select(v => v.Id).ToHashSet();
+                // Variants to be set as featured: those in requested but not currently featured
+                var toBeFeatured = variants.Where(v => !currentFeaturedIds.Contains(v.Id)).ToList();
+                foreach (var v in toBeFeatured)
+                {
+                    v.IsDefault = true;
+                    v.Product.IsFeatured = true;
+                }
+                // Variants to be unfeatured: those currently featured but not in requested
+                var toBeUnfeatured = currentFeatured.Where(v => !ids.Contains(v.Id)).ToList();
+                foreach (var v in toBeUnfeatured)
+                {
+                    v.IsDefault = false;
+                    // Check if product still has any default variant after unfeaturing this one
+                    var hasOtherDefault = currentFeatured.Any(cv => cv.Id != v.Id && cv.IsDefault) || toBeFeatured.Any(tf => tf.Product.Id == v.Product.Id);
+                    if (!hasOtherDefault)
+                    {
+                        v.Product.IsFeatured = false;
+                    }
+                }
+            }
+            // For each product, find existing default variants and compare with requested
+            var productGroups = variants.GroupBy(v => v.Product.Id);
+
+            var toUpdate = new List<ECommerce.Domain.Entities.ProductVariant>();
+
+            
+
+            // Persist changes: update changed variants and products
+            if (toUpdate.Any())
+            {
+                await _productVariantRepository.UpdateRangeAsync(toUpdate);
+            }
+
+            // Also update products IsFeatured where necessary
+            var affectedProducts = variants.Select(v => v.Product).Distinct().ToList();
+            foreach (var p in affectedProducts)
+            {
+                await _productRepository.UpdateAsync(p);
+            }
+        }
+
+        public async Task<List<VariantResponse>> GetFeaturedVariantsAsync()
+        {
+            var variants = await _productRepository.GetFeaturedDefaultVariantsAsync();
+            return variants.Select(v => v.ToVariantResponse()).ToList(); // Formatting change
+        }
+
         public async Task DeleteVariantByIdAsync(int variantId)
         {
             var variant = await _productVariantRepository.GetByIdAsync(variantId);

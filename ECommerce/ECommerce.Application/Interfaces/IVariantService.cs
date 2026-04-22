@@ -17,5 +17,7 @@ namespace ECommerce.Application.Interfaces
 
         Task DeleteVariantByIdAsync(int variantId);
         Task<int> CreateVariantAsync(int productId, ECommerce.Application.DTOs.Request.CreateVariantRequest request);
+        Task<List<VariantResponse>> GetFeaturedVariantsAsync();
+        Task SetFeaturedVariantsAsync(IEnumerable<int> variantIds);
     }
 }

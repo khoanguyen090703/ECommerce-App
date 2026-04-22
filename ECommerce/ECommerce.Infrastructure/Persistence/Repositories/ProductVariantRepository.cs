@@ -48,5 +48,33 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
             _context.ProductVariants.Update(variant);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<List<ProductVariant>> GetByIdsForUpdateAsync(IEnumerable<int> ids)
+        {
+            var list = await _context.ProductVariants
+                .Include(v => v.Images)
+                .Include(v => v.Product)
+                .Where(v => ids.Contains(v.Id))
+                .ToListAsync();
+
+            return list;
+        }
+
+        public async Task UpdateRangeAsync(IEnumerable<ProductVariant> variants)
+        {
+            _context.ProductVariants.UpdateRange(variants);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<List<ProductVariant>> GetDefaultVariantsAsync()
+        {
+            var defaultVariants = await _context.ProductVariants
+                .Where(v => v.IsDefault)
+                .Include(v => v.Images)
+                .Include(v => v.Product)
+                .ToListAsync();
+
+            return defaultVariants;
+        }
     }
 }

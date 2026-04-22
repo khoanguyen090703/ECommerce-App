@@ -11,5 +11,8 @@ namespace ECommerce.Domain.Interfaces
         Task<ProductVariant?> GetByIdForUpdateAsync(int id);
         Task UpdateAsync(ProductVariant variant);
         Task DeleteAsync(ProductVariant variant);
+        Task<List<ProductVariant>> GetByIdsForUpdateAsync(IEnumerable<int> ids);
+        Task UpdateRangeAsync(IEnumerable<ProductVariant> variants);
+        Task<List<ProductVariant>> GetDefaultVariantsAsync();
     }
 }

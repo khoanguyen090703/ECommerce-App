@@ -24,6 +24,13 @@ namespace ECommerce.Api.Controllers
             return Ok(items);
         }
 
+        [HttpGet("featured")]
+        public async Task<IActionResult> GetFeatured()
+        {
+            var items = await _variantService.GetFeaturedVariantsAsync();
+            return Ok(items);
+        }
+
         [HttpGet]
         public async Task<IActionResult> Get([FromQuery] VariantQueryParams parameters)
         {
@@ -61,6 +68,16 @@ namespace ECommerce.Api.Controllers
 
             var newId = await _variantService.CreateVariantAsync(productId, request);
             return CreatedAtAction(nameof(GetById), new { id = newId }, null);
+        }
+
+        [HttpPost("featured")]
+        public async Task<IActionResult> SetFeatured([FromBody] List<int> variantIds)
+        {
+            if (variantIds == null || !variantIds.Any())
+                return BadRequest("variantIds is required.");
+
+            await _variantService.SetFeaturedVariantsAsync(variantIds);
+            return NoContent();
         }
         [HttpPatch("{id:int:min(1)}/status")]
         public async Task<IActionResult> UpdateStatus(int id, [FromBody] ECommerce.Application.DTOs.Request.UpdateVariantStatusRequest request)

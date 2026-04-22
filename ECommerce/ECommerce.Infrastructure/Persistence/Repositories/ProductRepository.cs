@@ -210,5 +210,17 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
             _context.Products.Update(product);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<List<ProductVariant>> GetFeaturedDefaultVariantsAsync()
+        {
+            var variants = await _context.Products
+                .Where(p => p.IsFeatured && p.Status == ECommerce.Domain.Enums.ProductStatus.Active)
+                .SelectMany(p => p.ProductVariants)
+                .Where(v => v.IsDefault)
+                .Include(v => v.Images)
+                .ToListAsync();
+
+            return variants;
+        }
     }
 }
