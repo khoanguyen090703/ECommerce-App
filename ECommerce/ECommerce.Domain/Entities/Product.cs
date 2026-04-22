@@ -28,6 +28,8 @@ namespace ECommerce.Domain.Entities
 
         public ProductStatus Status { get; set; } = ProductStatus.Draft;
 
+        public bool IsFeatured { get; set; } = false;
+
         public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
 
         public ICollection<Category> Categories { get; set; } = new List<Category>();

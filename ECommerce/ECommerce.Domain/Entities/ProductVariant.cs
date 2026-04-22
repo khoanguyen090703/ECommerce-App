@@ -24,6 +24,8 @@ namespace ECommerce.Domain.Entities
 
         public int SoldQuantity { get; set; } = default;
 
+        public bool IsDefault { get; set; } = false;
+
         public Product Product { get; set; } = default!;
 
         public ICollection<VariantImage> Images { get; set; } = new List<VariantImage>();
