@@ -21,5 +21,10 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
             var items = await _context.ScentFamilies.AsNoTracking().ToListAsync();
             return items;
         }
+
+        public async Task<ScentFamily?> GetByIdAsync(int id)
+        {
+            return await _context.ScentFamilies.FirstOrDefaultAsync(sf => sf.Id == id);
+        }
     }
 }

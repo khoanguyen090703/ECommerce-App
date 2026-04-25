@@ -1,0 +1,174 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<section class="hero-section p-0 m-0 w-100 vh-100 position-relative">
+    <div class="swiper hero-swiper w-100 h-100">
+        <div class="swiper-wrapper">
+            
+            <div class="swiper-slide position-relative w-100 h-100">
+                <img src="~/images/banner-1.jpg" class="w-100 h-100" style="object-fit: cover; object-position: center;" alt="Banner 1">
+                <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.15);"></div>
+            </div>
+
+            <div class="swiper-slide position-relative w-100 h-100">
+                <img src="~/images/banner-2.jpg" class="w-100 h-100" style="object-fit: cover; object-position: center;" alt="Banner 2">
+                <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.15);"></div>
+            </div>
+
+            <div class="swiper-slide position-relative w-100 h-100">
+                <img src="~/images/banner-3.jpg" class="w-100 h-100" style="object-fit: cover; object-position: center;" alt="Banner 3">
+                <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.15);"></div>
+            </div>
+
+            <div class="swiper-slide position-relative w-100 h-100">
+                <img src="~/images/banner-4.jpg" class="w-100 h-100" style="object-fit: cover; object-position: center;" alt="Banner 4">
+                <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.15);"></div>
+            </div>
+
+            <div class="swiper-slide position-relative w-100 h-100">
+                <img src="~/images/banner-5.jpg" class="w-100 h-100" style="object-fit: cover; object-position: center;" alt="Banner 5">
+                <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.15);"></div>
+            </div>
+
+        </div>
+
+        <div class="swiper-pagination"></div>
+    </div>
+</section>
+
+<section class="category-section py-5">
+    <div class="container" style="max-width: 1200px;">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-0" style="font-family: var(--heading-font); color: var(--dark-color);">
+                Các loại nước hoa
+            </h2>
+            
+            <div class="d-flex gap-2">
+                <button class="swiper-prev cat-prev border-0 d-flex justify-content-center align-items-center">
+                    <svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6l6 6l1.41-1.41z" /></svg>
+                </button>
+                <button class="swiper-next cat-next border-0 d-flex justify-content-center align-items-center">
+                    <svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M8.59 16.59L13.17 12L8.59 7.41L10 6l6 6l-6 6l-1.41-1.41z" /></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="swiper category-swiper">
+            <div class="swiper-wrapper">
+                
+                @if (Model.Categories != null && Model.Categories.Any())
+                {
+                    foreach (var category in Model.Categories)
+                    {
+                        <div class="swiper-slide">
+                            <div class="category-item-fixed" data-id="@category.Id">
+                                <div class="img-wrapper">
+                                    <img src="@(string.IsNullOrEmpty(category.ImageUrl) ? "https://orchard.vn/wp-content/uploads/2024/07/category-nuoc-hoa-nam.webp" : category.ImageUrl)" alt="@category.Name">
+                                </div>
+                                <h3 class="category-title-fixed h6">@category.Name</h3>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="swiper-slide">
+                        <p class="text-center w-100">Chưa có danh mục nào.</p>
+                    </div>
+                }
+
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<section class="trending-product section" style="margin-top: 12px;">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="section-title">
+                    <h2>Featured Products</h2>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            @if (Model.FeaturedProducts != null && Model.FeaturedProducts.Any())
+            {
+                foreach (var product in Model.FeaturedProducts)
+                {
+                    <div class="col-lg-3 col-md-6 col-12">
+                        <!-- Start Single Product -->
+                        <div class="single-product" data-id="@product.Id">
+                            <div class="product-image">
+                                <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? Url.Content("~/images/dior-sauvage-edp.jpg") : product.ImageUrl)" alt="@product.Name">
+                                <div class="button">
+                                    <a href="#" class="btn btn-primary"><i class="lni lni-cart"></i>Add to Cart</a>
+                                </div>
+                            </div>
+                            <div class="product-info">
+                                <span class="category">@product.Status</span>
+                                <h4 class="title">
+                                    <a href="#">@product.Name</a>
+                                </h4>
+                             
+                                <div class="price">
+                                    <span>$@product.Price.ToString("N2")</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- End Single Product -->
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="col-12 text-center">
+                    <p>No featured products available at the moment.</p>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var swiper = new Swiper('.hero-swiper', {
+            loop: true,
+            effect: 'fade', 
+            fadeEffect: {
+                crossFade: true
+            },
+            speed: 1000, 
+            autoplay: {
+                delay: 4500,
+                disableOnInteraction: false,
+            },
+            pagination: {
+                el: '.swiper-pagination',
+                clickable: true,
+            }
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const swiper = new Swiper('.category-swiper', {
+            slidesPerView: 4,
+            spaceBetween: 30,
+            centerInsufficientSlides: true,
+
+            loop: false, 
+            slidesPerGroup: 1,
+            speed: 400,
+
+            navigation: {
+                nextEl: '.cat-next',
+                prevEl: '.cat-prev',
+            }
+        });
+    });
+</script>

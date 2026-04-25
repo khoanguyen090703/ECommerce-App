@@ -1,4 +1,4 @@
-﻿using Azure.Core;
+using Azure.Core;
 using ECommerce.Application.DTOs.Request;
 using ECommerce.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -20,7 +20,7 @@ namespace ECommerce.Api.Controllers
             _categoryService = categoryService;
         }
 
-        [HttpGet]
+        [HttpGet("all")]
         public async Task<IActionResult> GetAll()
         {
             var categories = await _categoryService.GetAllAsync();

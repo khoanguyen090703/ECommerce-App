@@ -1,4 +1,4 @@
-﻿using ECommerce.Domain.Entities;
+using ECommerce.Domain.Entities;
 using ECommerce.Domain.Enums;
 using System;
 using System.Collections.Generic;
@@ -17,6 +17,8 @@ namespace ECommerce.Application.DTOs.Request
         public int BrandId { get; set; }
 
         public List<int> CategoryIds { get; set; } = new List<int>();
+
+        public List<int> ScentFamilyIds { get; set; } = new List<int>();
 
         public string? Line { get; set; }
 

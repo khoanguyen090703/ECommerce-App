@@ -21,6 +21,7 @@ namespace ECommerce.Application.Services
         private readonly IProductRepository _productRepository;
         private readonly ICategoryRepository _categoryRepository;
         private readonly IBrandRepository _brandRepository;
+        private readonly IScentFamilyRepository _scentFamilyRepository;
 
         private readonly IValidator<CreateProductRequest> _createProductRequestValidator;
         private readonly IValidator<UpdateProductRequest> _updateProductRequestValidator;
@@ -29,12 +30,14 @@ namespace ECommerce.Application.Services
             IProductRepository productRepository,
             ICategoryRepository categoryRepository,
             IBrandRepository brandRepository,
+            IScentFamilyRepository scentFamilyRepository,
             IValidator<CreateProductRequest> createProductRequestValidator,
             IValidator<UpdateProductRequest> updateProductRequestValidator)
         {
             _productRepository = productRepository;
             _categoryRepository = categoryRepository;
             _brandRepository = brandRepository;
+            _scentFamilyRepository = scentFamilyRepository;
             _createProductRequestValidator = createProductRequestValidator;
             _updateProductRequestValidator = updateProductRequestValidator;
         }
@@ -56,6 +59,16 @@ namespace ECommerce.Application.Services
                 if (cat == null)
                     throw new NotFoundException($"Category with id {cid} not found.");
                 categories.Add(cat);
+            }
+
+            // Check scent families
+            var scentFamilies = new List<ScentFamily>();
+            foreach (var sfid in request.ScentFamilyIds)
+            {
+                var sf = await _scentFamilyRepository.GetByIdAsync(sfid);
+                if (sf == null)
+                    throw new NotFoundException($"Scent family with id {sfid} not found.");
+                scentFamilies.Add(sf);
             }
 
             // Product images
@@ -113,6 +126,7 @@ namespace ECommerce.Application.Services
                 Concentration = request.Concentration,
                 Images = productImages,
                 Categories = categories,
+                ScentFamilies = scentFamilies,
                 ProductVariants = productVariants
             };
 

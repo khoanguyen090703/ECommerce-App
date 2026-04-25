@@ -212,7 +212,7 @@ namespace ECommerce.Application.Services
                     var hasOtherDefault = currentFeatured.Any(cv => cv.Id != v.Id && cv.IsDefault) || toBeFeatured.Any(tf => tf.Product.Id == v.Product.Id);
                     if (!hasOtherDefault)
                     {
-                        v.Product.IsFeatured = false;
+                        v.Product.IsFeatured = false; 
                     }
                 }
             }

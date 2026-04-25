@@ -14,10 +14,10 @@ namespace ECommerce.Infrastructure.Persistence.Seeders
             {
                 var categories = new List<Category>
                 {
-                    new Category { Name = "Male"},
-                    new Category { Name = "Female"},
-                    new Category { Name = "Unisex"},
-                    new Category { Name = "Niche"},
+                    new Category { Name = "Male", ImageUrl = "https://orchard.vn/wp-content/uploads/2024/07/category-nuoc-hoa-nam.webp"},
+                    new Category { Name = "Female", ImageUrl = "https://orchard.vn/wp-content/uploads/2024/07/category-nuoc-hoa-nu-600x720.webp"},
+                    new Category { Name = "Unisex", ImageUrl = "https://orchard.vn/wp-content/uploads/2024/07/category-nuoc-hoa-unisex-600x720.webp"},
+                    new Category { Name = "Niche", ImageUrl = "https://orchard.vn/wp-content/uploads/2024/07/category-nuoc-hoa-niche-600x720.webp"},
                 };
 
                 await context.Categories.AddRangeAsync(categories);

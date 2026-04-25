@@ -1,4 +1,4 @@
-﻿using ECommerce.Infrastructure.Identity;
+using ECommerce.Infrastructure.Identity;
 using ECommerce.Infrastructure.Persistence.Seeders;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -28,7 +28,7 @@ namespace ECommerce.Infrastructure.Persistence
                 // 1. Tự động chạy Migration (Tùy chọn)
                 if (context.Database.IsSqlServer())
                 {
-                    await context.Database.MigrateAsync();
+                     await context.Database.MigrateAsync();
                 }
 
                 // 2. Gọi các hàm Seed
@@ -38,6 +38,7 @@ namespace ECommerce.Infrastructure.Persistence
                 await CategorySeeder.SeedAsync(context);
                 await BrandSeeder.SeedAsync(context);
                 await ScentFamilySeeder.SeedAsync(context);
+                await ProductSeeder.SeedAsync(context);
                 
             }
             catch (Exception ex)

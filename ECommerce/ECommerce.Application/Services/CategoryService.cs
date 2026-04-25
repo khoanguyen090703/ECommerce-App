@@ -1,4 +1,4 @@
-﻿using ECommerce.Application.DTOs.Request;
+using ECommerce.Application.DTOs.Request;
 using ECommerce.Application.DTOs.Response;
 using ECommerce.Application.Exceptions;
 using ECommerce.Application.Interfaces;
@@ -62,7 +62,8 @@ namespace ECommerce.Application.Services
             {
                 Id = c.Id,
                 Name = c.Name,
-                Description = c.Description
+                Description = c.Description,
+                ImageUrl = c.ImageUrl
             }).ToList();
             return categorieResponses;
         }

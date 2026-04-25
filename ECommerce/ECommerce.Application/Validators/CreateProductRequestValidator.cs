@@ -1,4 +1,4 @@
-﻿using ECommerce.Application.DTOs.Request;
+using ECommerce.Application.DTOs.Request;
 using FluentValidation;
 using System;
 using System.Collections.Generic;
@@ -26,6 +26,9 @@ namespace ECommerce.Application.Validators
 
             RuleFor(x => x.CategoryIds)
                 .NotEmpty().WithMessage("At least one category is required.");
+
+            RuleFor(x => x.ScentFamilyIds)
+                .NotEmpty().WithMessage("At least one scent family is required.");
 
             RuleFor(x => x.Concentration)
                 .IsInEnum().WithMessage("Invalid product concentration.");
