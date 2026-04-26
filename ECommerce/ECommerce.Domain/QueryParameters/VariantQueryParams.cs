@@ -9,9 +9,12 @@ namespace ECommerce.Domain.QueryParameters
 
         // Filter by product's category name
         public string? Category { get; set; }
+        
+        // Filter by product's brand name
+        public string? Brand { get; set; }
 
         // Price range
-        public decimal? PriceFrom { get; set; }
-        public decimal? PriceTo { get; set; }
+        public decimal? FromPrice { get; set; }
+        public decimal? ToPrice { get; set; }
     }
 }

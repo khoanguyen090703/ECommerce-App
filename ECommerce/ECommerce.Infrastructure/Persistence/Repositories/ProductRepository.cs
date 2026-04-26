@@ -1,4 +1,4 @@
-﻿using ECommerce.Application.Exceptions;
+using ECommerce.Application.Exceptions;
 using ECommerce.Domain.Common;
 using ECommerce.Domain.Entities;
 using ECommerce.Domain.Interfaces;
@@ -88,6 +88,7 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
                 .Include(v => v.Product).ThenInclude(p => p.Images)
                 .Include(v => v.Product).ThenInclude(p => p.Categories)
                 .Include(v => v.Product).ThenInclude(p => p.ScentFamilies)
+                .Include(v => v.Product).ThenInclude(p => p.Brand)
                 .AsNoTracking().AsQueryable();
 
             // Only include variants whose parent product is Active
@@ -110,15 +111,21 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
             {
                 query = query.Where(v => v.Product.Categories.Any(c => c.Name.Contains(parameters.Category)));
             }
+            
+            // Filter by brand
+            if (!string.IsNullOrWhiteSpace(parameters.Brand))
+            {
+                query = query.Where(v => v.Product.Brand != null && v.Product.Brand.Name.Contains(parameters.Brand));
+            }
 
             // Filter by price range
-            if (parameters.PriceFrom.HasValue)
+            if (parameters.FromPrice.HasValue)
             {
-                query = query.Where(v => v.Price >= parameters.PriceFrom.Value);
+                query = query.Where(v => v.Price >= parameters.FromPrice.Value);
             }
-            if (parameters.PriceTo.HasValue)
+            if (parameters.ToPrice.HasValue)
             {
-                query = query.Where(v => v.Price <= parameters.PriceTo.Value);
+                query = query.Where(v => v.Price <= parameters.ToPrice.Value);
             }
 
             // Sort
@@ -126,6 +133,8 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
             {
                 "price_desc" => query.OrderByDescending(v => v.Price),
                 "price_asc" => query.OrderBy(v => v.Price),
+                "updated_desc" => query.OrderByDescending(v => v.UpdatedDate ?? v.CreatedDate),
+                "updated_asc" => query.OrderBy(v => v.UpdatedDate ?? v.CreatedDate),
                 _ => query.OrderBy(v => v.Id)
             };
 

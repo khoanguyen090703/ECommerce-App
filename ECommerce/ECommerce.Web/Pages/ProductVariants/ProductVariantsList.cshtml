@@ -1,0 +1,332 @@
+@page
+@model ECommerce.Web.Pages.ProductVariants.ProductVariantsListModel
+@{
+    ViewData["Title"] = "Danh sách sản phẩm";
+}
+
+<style>
+    .filter-sidebar {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+    }
+    .filter-section-title {
+        font-weight: bold;
+        margin-bottom: 15px;
+        margin-top: 20px;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 5px;
+    }
+    .filter-section-title:first-child {
+        margin-top: 0;
+    }
+    .filter-list {
+        list-style: none;
+        padding-left: 0;
+    }
+    .filter-list li {
+        margin-bottom: 8px;
+    }
+    .active-filter-badge {
+        display: inline-flex;
+        align-items: center;
+        background-color: #e9ecef;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        margin-right: 10px;
+        margin-bottom: 10px;
+    }
+    .active-filter-badge a {
+        color: #dc3545;
+        margin-left: 8px;
+        text-decoration: none;
+        font-weight: bold;
+    }
+    .active-filter-badge a:hover {
+        color: #a71d2a;
+    }
+    .product-image {
+        position: relative;
+        overflow: hidden;
+    }
+    .product-image img {
+        width: 100%;
+        height: auto;
+        transition: transform 0.3s;
+    }
+    .product-image:hover img {
+        transform: scale(1.05);
+    }
+    .single-product {
+        border: 1px solid #eee;
+        border-radius: 8px;
+        padding: 15px;
+        text-align: center;
+        background: #fff;
+        transition: box-shadow 0.3s;
+        height: 100%;
+    }
+    .single-product:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .product-info .title {
+        font-size: 1.1rem;
+        margin-top: 15px;
+        margin-bottom: 10px;
+    }
+    .product-info .price {
+        font-weight: bold;
+        color: #28a745;
+        font-size: 1.2rem;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row">
+        <!-- Sidebar Filter -->
+        <div class="col-lg-3 col-md-4 mb-4">
+            <div class="filter-sidebar">
+                <form id="filterForm" method="get">
+                    <!-- Hidden inputs for pagination to keep it on page 1 when filtering -->
+                    <input type="hidden" name="PageNumber" value="1" id="pageNumberInput" />
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="m-0">Bộ lọc</h4>
+                        <a href="?" class="btn btn-sm btn-outline-secondary">Xóa tất cả</a>
+                    </div>
+
+                    <!-- Category Filter -->
+                    <h5 class="filter-section-title">Danh mục</h5>
+                    <select class="form-select form-select-sm mb-2" name="Category" onchange="this.form.submit()">
+                        <option value="" selected="@(string.IsNullOrEmpty(Model.Category))">Tất cả</option>
+                        @foreach (var cat in Model.Categories)
+                        {
+                            <option value="@cat.Name" selected="@(Model.Category == cat.Name)">@cat.Name</option>
+                        }
+                    </select>
+
+                    <!-- Brand Filter -->
+                    <h5 class="filter-section-title">Thương hiệu</h5>
+                    <select class="form-select form-select-sm mb-2" name="Brand" onchange="this.form.submit()">
+                        <option value="" selected="@(string.IsNullOrEmpty(Model.Brand))">Tất cả</option>
+                        @foreach (var brand in Model.Brands)
+                        {
+                            <option value="@brand.Name" selected="@(Model.Brand == brand.Name)">@brand.Name</option>
+                        }
+                    </select>
+
+                    <!-- Scent Family Filter -->
+                    <h5 class="filter-section-title">Nhóm hương</h5>
+                    <select class="form-select form-select-sm mb-2" name="ScentFamily" onchange="this.form.submit()">
+                        <option value="" selected="@(string.IsNullOrEmpty(Model.ScentFamily))">Tất cả</option>
+                        @foreach (var sf in Model.ScentFamilies)
+                        {
+                            <option value="@sf.Name" selected="@(Model.ScentFamily == sf.Name)">@sf.Name</option>
+                        }
+                    </select>
+
+                    <!-- Price Filter -->
+                    <h5 class="filter-section-title">Khoảng giá ($)</h5>
+                    <div class="row g-2 align-items-center mb-3">
+                        <div class="col-5">
+                            <input type="number" class="form-control form-control-sm" name="FromPrice" value="@Model.FromPrice" placeholder="Từ">
+                        </div>
+                        <div class="col-2 text-center">-</div>
+                        <div class="col-5">
+                            <input type="number" class="form-control form-control-sm" name="ToPrice" value="@Model.ToPrice" placeholder="Đến">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary w-100">Áp dụng giá</button>
+
+                    <!-- Hidden SortBy so it persists on form submit -->
+                    <input type="hidden" name="SortBy" value="@Model.SortBy" id="hiddenSortBy" />
+                </form>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-9 col-md-8">
+            
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <!-- Active Filters -->
+                <div>
+                    @if (!string.IsNullOrEmpty(Model.Category))
+                    {
+                        <span class="active-filter-badge">
+                            Danh mục: @Model.Category <a href="javascript:void(0)" onclick="clearFilter('Category')">&times;</a>
+                        </span>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Brand))
+                    {
+                        <span class="active-filter-badge">
+                            Thương hiệu: @Model.Brand <a href="javascript:void(0)" onclick="clearFilter('Brand')">&times;</a>
+                        </span>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.ScentFamily))
+                    {
+                        <span class="active-filter-badge">
+                            Hương: @Model.ScentFamily <a href="javascript:void(0)" onclick="clearFilter('ScentFamily')">&times;</a>
+                        </span>
+                    }
+                    @if (Model.FromPrice.HasValue || Model.ToPrice.HasValue)
+                    {
+                        <span class="active-filter-badge">
+                            Giá: @(Model.FromPrice?.ToString("N0") ?? "0") - @(Model.ToPrice?.ToString("N0") ?? "Max")
+                            <a href="javascript:void(0)" onclick="clearPriceFilter()">&times;</a>
+                        </span>
+                    }
+                </div>
+
+                <!-- Sort Dropdown -->
+                <div class="d-flex align-items-center">
+                    <label class="me-2 text-nowrap">Sắp xếp:</label>
+                    <select class="form-select form-select-sm" onchange="updateSort(this.value)" style="width: auto;">
+                        <option value="" selected="@(string.IsNullOrEmpty(Model.SortBy))">Mặc định</option>
+                        <option value="price_asc" selected="@(Model.SortBy == "price_asc")">Giá: Thấp đến Cao</option>
+                        <option value="price_desc" selected="@(Model.SortBy == "price_desc")">Giá: Cao đến Thấp</option>
+                        <option value="updated_desc" selected="@(Model.SortBy == "updated_desc")">Mới cập nhật</option>
+                        <option value="updated_asc" selected="@(Model.SortBy == "updated_asc")">Cập nhật cũ nhất</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Product Grid -->
+            <div class="row">
+                @if (Model.VariantsData != null && Model.VariantsData.Items.Any())
+                {
+                    foreach (var product in Model.VariantsData.Items)
+                    {
+                        <div class="col-lg-4 col-md-6 col-12 mb-4">
+                            <!-- Start Single Product -->
+                            <div class="single-product" data-id="@product.Id">
+                                <div class="product-image">
+                                    <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? Url.Content("~/images/dior-sauvage-edp.jpg") : product.ImageUrl)" alt="@product.Name">
+                                    <div class="button mt-3 text-center">
+                                        <a href="#" class="btn btn-primary btn-sm"><i class="lni lni-cart"></i> Add to Cart</a>
+                                    </div>
+                                </div>
+                                <div class="product-info">
+                                    <span class="badge bg-secondary mb-2">@product.Status</span>
+                                    <h4 class="title text-truncate" title="@product.Name">
+                                        <a href="#" class="text-dark text-decoration-none">@product.Name</a>
+                                    </h4>
+                                    <div class="price">
+                                        <span>@product.Price.ToString("N0") VND</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- End Single Product -->
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="col-12 text-center py-5">
+                        <p class="text-muted">Không tìm thấy sản phẩm nào phù hợp với bộ lọc.</p>
+                    </div>
+                }
+            </div>
+
+            <!-- Pagination -->
+            @if (Model.VariantsData != null && Model.VariantsData.TotalPages > 1)
+            {
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item @(Model.PageNumber <= 1 ? "disabled" : "")">
+                            <a class="page-link" href="javascript:void(0)" onclick="goToPage(@(Model.PageNumber - 1))" tabindex="-1">Trước</a>
+                        </li>
+                        
+                        @for (int i = 1; i <= Model.VariantsData.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                                <a class="page-link" href="javascript:void(0)" onclick="goToPage(@i)">@i</a>
+                            </li>
+                        }
+
+                        <li class="page-item @(Model.PageNumber >= Model.VariantsData.TotalPages ? "disabled" : "")">
+                            <a class="page-link" href="javascript:void(0)" onclick="goToPage(@(Model.PageNumber + 1))">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function updateSort(val) {
+            document.getElementById('hiddenSortBy').value = val;
+            document.getElementById('filterForm').submit();
+        }
+
+        function goToPage(page) {
+            document.getElementById('pageNumberInput').value = page;
+            
+            // To prevent resetting filters on page change, we submit the same filter form but with new page number.
+            // Since PageNumber is an input in the form, it will automatically include it.
+            // However, we want to make sure it submits to the same action.
+            var form = document.getElementById('filterForm');
+            
+            // Remove empty inputs to make URL cleaner
+            var inputs = form.querySelectorAll('input[type="radio"]:not(:checked), input[type="number"], input[type="hidden"]');
+            inputs.forEach(function(input) {
+                if (input.value === "" && input.type !== "hidden") {
+                    input.disabled = true;
+                }
+            });
+            
+            form.submit();
+        }
+
+        function clearFilter(name) {
+            var element = document.querySelector('[name="' + name + '"]');
+            if (!element) return;
+
+            if (element.tagName === 'SELECT') {
+                element.value = '';
+            } else {
+                // Backward compatibility for input-based filters.
+                var radios = document.querySelectorAll('input[name="' + name + '"]');
+                radios.forEach(function(r) {
+                    if (r.value === "") {
+                        r.checked = true;
+                    }
+                });
+            }
+
+            document.getElementById('pageNumberInput').value = 1;
+            document.getElementById('filterForm').submit();
+        }
+
+        function clearPriceFilter() {
+            document.querySelector('input[name="FromPrice"]').value = '';
+            document.querySelector('input[name="ToPrice"]').value = '';
+            document.getElementById('pageNumberInput').value = 1;
+            document.getElementById('filterForm').submit();
+        }
+
+        // Clean up URL on submit (remove empty params)
+        document.getElementById('filterForm').addEventListener('submit', function() {
+            var inputs = this.querySelectorAll('input[type="radio"]:not(:checked), input[type="number"]');
+            inputs.forEach(function(input) {
+                if (input.value === "") {
+                    input.disabled = true;
+                }
+            });
+
+            var selects = this.querySelectorAll('select');
+            selects.forEach(function(select) {
+                if (select.value === "") {
+                    select.disabled = true;
+                }
+            });
+            
+            var sortInput = document.getElementById('hiddenSortBy');
+            if(sortInput.value === "") {
+                sortInput.disabled = true;
+            }
+        });
+    </script>
+}
