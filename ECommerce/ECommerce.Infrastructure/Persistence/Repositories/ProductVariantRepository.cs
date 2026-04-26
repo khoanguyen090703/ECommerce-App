@@ -25,6 +25,7 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
         public async Task<ProductVariant?> GetByIdAsync(int id)
         {
             var variant = await _context.ProductVariants
+                .Include(v => v.Product)
                 .Include(v => v.Images)
                 .FirstOrDefaultAsync(v => v.Id == id);
 

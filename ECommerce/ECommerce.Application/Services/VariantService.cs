@@ -249,6 +249,9 @@ namespace ECommerce.Application.Services
             if (variant == null)
                 throw new ECommerce.Application.Exceptions.NotFoundException($"Variant with id {variantId} not found.");
 
+            if(variant.Product.Status != Domain.Enums.ProductStatus.Draft)
+                throw new ECommerce.Application.Exceptions.ConflictException($"Variant with id {variantId} cannot be deleted because its product is not in draft status.");
+
             await _productVariantRepository.DeleteAsync(variant);
         }
     }
