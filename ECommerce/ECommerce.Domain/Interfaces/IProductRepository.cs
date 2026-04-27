@@ -27,5 +27,7 @@ namespace ECommerce.Domain.Interfaces
         Task UpdateVariantAsync(ProductVariant variant);
         Task UpdateProductStatusAsync(int id, ECommerce.Domain.Enums.ProductStatus status);
         Task<List<ProductVariant>> GetFeaturedDefaultVariantsAsync();
+
+        Task<List<ProductVariant>> GetVariantsOfProductByIdAsync(int productId);
     }
 }

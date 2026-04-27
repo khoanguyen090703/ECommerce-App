@@ -199,9 +199,13 @@
                     {
                         <div class="col-lg-4 col-md-6 col-12 mb-4">
                             <!-- Start Single Product -->
-                            <div class="single-product" data-id="@product.Id">
+                            <div class="single-product product-card-link"
+                                 data-id="@product.Id"
+                                 data-url="@Url.Page("/ProductVariants/ProductDetails", new { id = product.Id })">
                                 <div class="product-image">
-                                    <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? Url.Content("~/images/dior-sauvage-edp.jpg") : product.ImageUrl)" alt="@product.Name">
+                                    <a asp-page="/ProductVariants/ProductDetails" asp-route-id="@product.Id">
+                                        <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? Url.Content("~/images/dior-sauvage-edp.jpg") : product.ImageUrl)" alt="@product.Name">
+                                    </a>
                                     <div class="button mt-3 text-center">
                                         <a href="#" class="btn btn-primary btn-sm"><i class="lni lni-cart"></i> Add to Cart</a>
                                     </div>
@@ -209,7 +213,11 @@
                                 <div class="product-info">
                                     <span class="badge bg-secondary mb-2">@product.Status</span>
                                     <h4 class="title text-truncate" title="@product.Name">
-                                        <a href="#" class="text-dark text-decoration-none">@product.Name</a>
+                                        <a asp-page="/ProductVariants/ProductDetails"
+                                           asp-route-id="@product.Id"
+                                           class="text-dark text-decoration-none">
+                                            @product.Name
+                                        </a>
                                     </h4>
                                     <div class="price">
                                         <span>@product.Price.ToString("N0") VND</span>
@@ -327,6 +335,19 @@
             if(sortInput.value === "") {
                 sortInput.disabled = true;
             }
+        });
+
+        document.querySelectorAll('.product-card-link').forEach(function(card) {
+            card.addEventListener('click', function(e) {
+                if (e.target.closest('a, button')) {
+                    return;
+                }
+
+                var detailUrl = this.getAttribute('data-url');
+                if (detailUrl) {
+                    window.location.href = detailUrl;
+                }
+            });
         });
     </script>
 }

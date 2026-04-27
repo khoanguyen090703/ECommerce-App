@@ -163,8 +163,8 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
                     .ThenInclude(p => p.Categories)
                 .Include(v => v.Product)
                     .ThenInclude(p => p.ScentFamilies)
-                //.Include(v => v.Product)
-                //    .ThenInclude(p => p.ProductVariants).ThenInclude(pv => pv.Images)
+                .Include(v => v.Product)
+                    .ThenInclude(p => p.Brand)
                 .Include(v => v.Product)
                     .ThenInclude(p => p.Reviews).ThenInclude(r => r.ReviewResponses)
                 .AsNoTracking()
@@ -227,6 +227,18 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
                 .SelectMany(p => p.ProductVariants)
                 .Where(v => v.IsDefault)
                 .Include(v => v.Images)
+                .ToListAsync();
+
+            return variants;
+        }
+
+        public async Task<List<ProductVariant>> GetVariantsOfProductByIdAsync(int id)
+        {
+            var variants = await _context.Products
+                .Include(v => v.ProductVariants).ThenInclude(pv => pv.Images)
+                .AsNoTracking()
+                .Where(v => v.Id == id)
+                .SelectMany(p => p.ProductVariants) 
                 .ToListAsync();
 
             return variants;

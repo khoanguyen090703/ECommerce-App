@@ -164,7 +164,7 @@ namespace ECommerce.Application.Services
             return product.ToDetailsResponse();
         }
 
-        public async Task<ProductWithVariantsResponse?> GetProductWithVariantsByVariantIdAsync(int variantId)
+        public async Task<VariantDetails4Cus?> GetProductWithVariantsByVariantIdAsync(int variantId)
         {
             var variant = await _productRepository.GetVariantByIdAsync(variantId);
             if (variant == null)
@@ -174,7 +174,13 @@ namespace ECommerce.Application.Services
             if (product == null)
                 throw new NotFoundException($"Parent product for variant id {variantId} not found.");
 
-            return product.ToProductWithVariantsResponse();
+            var variants = await _productRepository.GetVariantsOfProductByIdAsync(product.Id);
+            var variantResponses = variants.Select(v => v.To4CusProdDetails()).ToList();
+
+            var response = variant.ToDetails4Cus();
+            response.ProductVariants = variantResponses;
+
+            return response;
         }
 
         public async Task<PagedResult<ProductResponse4List>> GetProductsAsync(ProductQueryParams parameters)

@@ -103,9 +103,13 @@
                 {
                     <div class="col-lg-3 col-md-6 col-12">
                         <!-- Start Single Product -->
-                        <div class="single-product" data-id="@product.Id">
+                        <div class="single-product product-card-link"
+                             data-id="@product.Id"
+                             data-url="@Url.Page("/ProductVariants/ProductDetails", new { id = product.Id })">
                             <div class="product-image">
-                                <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? Url.Content("~/images/dior-sauvage-edp.jpg") : product.ImageUrl)" alt="@product.Name">
+                                <a asp-page="/ProductVariants/ProductDetails" asp-route-id="@product.Id">
+                                    <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? Url.Content("~/images/dior-sauvage-edp.jpg") : product.ImageUrl)" alt="@product.Name">
+                                </a>
                                 <div class="button">
                                     <a href="#" class="btn btn-primary"><i class="lni lni-cart"></i>Add to Cart</a>
                                 </div>
@@ -113,7 +117,7 @@
                             <div class="product-info">
                                 <span class="category">@product.Status</span>
                                 <h4 class="title">
-                                    <a href="#">@product.Name</a>
+                                    <a asp-page="/ProductVariants/ProductDetails" asp-route-id="@product.Id">@product.Name</a>
                                 </h4>
                              
                                 <div class="price">
@@ -169,6 +173,21 @@
                 nextEl: '.cat-next',
                 prevEl: '.cat-prev',
             }
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.product-card-link').forEach(function (card) {
+            card.addEventListener('click', function (e) {
+                if (e.target.closest('a, button')) {
+                    return;
+                }
+
+                const detailUrl = card.getAttribute('data-url');
+                if (detailUrl) {
+                    window.location.href = detailUrl;
+                }
+            });
         });
     });
 </script>

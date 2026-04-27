@@ -1,0 +1,320 @@
+﻿@page "{id:int}"
+@model ECommerce.Web.Pages.ProductVariants.ProductDetailsModel
+@{
+    var details = Model.VariantDetails;
+    var fallbackImage = Url.Content("~/images/dior-sauvage-edp.jpg");
+    var galleryImages = details?.ImageUrls?.Any() == true
+        ? details.ImageUrls
+        : new List<string> { fallbackImage };
+    var mainImage = galleryImages.FirstOrDefault() ?? fallbackImage;
+    var activeVariant = details?.ProductVariants?.FirstOrDefault(v => v.Id == Model.CurrentVariantId);
+    var variantTitle = activeVariant is not null
+        ? $"{activeVariant.Format} - {activeVariant.Volumn}"
+        : "Chi tiết sản phẩm";
+    var ratingValue = details?.AverageRating ?? 0;
+    var ratingPercent = Math.Clamp(ratingValue / 5d * 100d, 0, 100);
+}
+
+<!DOCTYPE html>
+<html class="no-js" lang="zxx">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <title>Single Product - ShopGrids Bootstrap 5 eCommerce HTML Template.</title>
+    <meta name="description" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- ========================= CSS here ========================= -->
+    <link rel="stylesheet" href="~/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/LineIcons.3.0.css" />
+    <link rel="stylesheet" href="~/css/tiny-slider.css" />
+    <link rel="stylesheet" href="~/css/glightbox.min.css" />
+    <link rel="stylesheet" href="~/css/main.css" />
+</head>
+
+<body>
+    <!-- Start Item Details -->
+    <section class="item-details section">
+        <div class="container">
+            @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger mb-4">@Model.ErrorMessage</div>
+            }
+            else if (details is not null)
+            {
+                <div class="top-area">
+                    <div class="row align-items-center">
+                        <div class="col-lg-6 col-md-12 col-12">
+                            <div class="product-images">
+                                <main id="gallery">
+                                    <div class="main-img">
+                                        <img src="@mainImage" id="current" alt="Product image">
+                                    </div>
+                                    <div class="images">
+                                        @foreach (var imageUrl in galleryImages)
+                                        {
+                                            <img src="@imageUrl" class="img" alt="Thumbnail">
+                                        }
+                                    </div>
+                                </main>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 col-md-12 col-12">
+                            <div class="product-info">
+                                <h2 class="title">@details.Name</h2>
+                                <div class="rating-row mb-2">
+                                    <span class="rating-badge">@details.AverageRating.ToString("0.0")</span>
+                                    <span class="stars-wrap" aria-label="Rating @details.AverageRating trên 5">
+                                        <span class="stars stars-base">★★★★★</span>
+                                        <span class="stars stars-fill" style="width: @ratingPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%;">★★★★★</span>
+                                    </span>
+                                    <span class="reviews-text">(@details.TotalReviews đánh giá)</span>
+                                    <span class="sold-text">Đã bán @details.SoldQuantity</span>
+                                </div>
+                                <p class="info-text">
+                                    @details.Description
+                                </p>
+                                <p><strong>Thương hiệu:</strong> @details.Brand</p>
+                                @* <p class="category">
+                                    <i class="lni lni-tag"></i> Danh mục:
+                                    <a href="javascript:void(0)">@details.Categories</a>
+                                </p> *@
+
+                                <p><strong>Danh mục:</strong> @details.Categories</p>
+                                
+                                <p><strong>Trạng thái:</strong> @details.Status</p>
+                                <h3 class="price">@details.Price.ToString("N0") VND</h3>
+                                
+                                <div class="row g-2">
+                                    @foreach (var variant in details.ProductVariants)
+                                    {
+                                        var variantImage = string.IsNullOrWhiteSpace(variant.ImageUrl) ? fallbackImage : variant.ImageUrl;
+                                        var isActive = variant.Id == Model.CurrentVariantId;
+                                        <div class="col-4 col-md-3 col-lg-2">
+                                            <a asp-page="/ProductVariants/ProductDetails"
+                                               asp-route-id="@variant.Id"
+                                               class="variant-card @(isActive ? "variant-card-active" : "")">
+                                                <img src="@variantImage" alt="Variant @variant.Id">
+                                                <span class="variant-meta">@variant.Format - @variant.Volumn</span>
+                                            </a>
+                                        </div>
+                                    }
+                                </div>
+                                <div class="bottom-content">
+                                    <div class="row align-items-end">
+                                        <div class="col-lg-4 col-md-4 col-12">
+                                            <div class="button cart-button">
+                                                <button class="btn" style="width: 100%;">Add to Cart</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        @* <div class="product-details-info">
+            <div class="single-block">
+                <div class="row">
+                    <div class="col-lg-6 col-12">
+                        <div class="info-body custom-responsive-margin">
+                            <h4>Details</h4>
+                            <p>
+                                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+                                incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                                exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute
+                                irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat.
+                            </p>
+                            <h4>Features</h4>
+                            <ul class="features">
+                                <li>Capture 4K30 Video and 12MP Photos</li>
+                                <li>Game-Style Controller with Touchscreen</li>
+                                <li>View Live Camera Feed</li>
+                                <li>Full Control of HERO6 Black</li>
+                                <li>Use App for Dedicated Camera Operation</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 col-12">
+                        <div class="info-body">
+                            <h4>Specifications</h4>
+                            <ul class="normal-list">
+                                <li><span>Weight:</span> 35.5oz (1006g)</li>
+                                <li><span>Maximum Speed:</span> 35 mph (15 m/s)</li>
+                                <li><span>Maximum Distance:</span> Up to 9,840ft (3,000m)</li>
+                                <li><span>Operating Frequency:</span> 2.4GHz</li>
+                                <li><span>Manufacturer:</span> GoPro, USA</li>
+                            </ul>
+                            <h4>Shipping Options:</h4>
+                            <ul class="normal-list">
+                                <li><span>Courier:</span> 2 - 4 days, $22.50</li>
+                                <li><span>Local Shipping:</span> up to one week, $10.00</li>
+                                <li><span>UPS Ground Shipping:</span> 4 - 6 days, $18.00</li>
+                                <li><span>Unishop Global Export:</span> 3 - 4 days, $25.00</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div> *@
+</section>
+<!-- End Item Details -->
+
+<!-- ========================= scroll-top ========================= -->
+<a href="#" class="scroll-top">
+    <i class="lni lni-chevron-up"></i>
+</a>
+
+<!-- ========================= JS here ========================= -->
+<script src="~/js/bootstrap.min.js"></script>
+<script src="~/js/tiny-slider.js"></script>
+<script src="~/js/glightbox.min.js"></script>
+<script src="~/js/main.js"></script>
+<style>
+    .product-images .main-img {
+        width: 100%;
+        max-width: 520px;
+        height: 420px;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .product-images .main-img #current {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .product-images .images {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .product-images .images .img {
+        width: 86px;
+        height: 86px;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 4px;
+        object-fit: contain;
+        background: #fff;
+        cursor: pointer;
+    }
+
+    .rating-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .rating-badge {
+        background: #ff8c00;
+        color: #fff;
+        font-weight: 600;
+        font-size: 0.82rem;
+        border-radius: 999px;
+        padding: 2px 10px;
+        line-height: 1.4;
+    }
+
+    .stars-wrap {
+        position: relative;
+        display: inline-block;
+        line-height: 1;
+        font-size: 1rem;
+    }
+
+    .stars {
+        display: inline-block;
+        letter-spacing: 2px;
+    }
+
+    .stars-base {
+        color: #d7d7d7;
+    }
+
+    .stars-fill {
+        color: #ff8c00;
+        position: absolute;
+        left: 0;
+        top: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        width: 0;
+    }
+
+    .reviews-text {
+        color: #0d6efd;
+        font-weight: 400;
+    }
+
+    .sold-text {
+        color: #111;
+        padding-left: 8px;
+        border-left: 1px solid #111;
+    }
+
+    .variant-card {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 4px;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        text-decoration: none;
+        color: inherit;
+        background: #fff;
+        transition: all .2s ease-in-out;
+    }
+
+    .variant-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
+    }
+
+    .variant-card img {
+        width: 100%;
+        height: 35px;
+        object-fit: cover;
+        border-radius: 4px;
+    }
+
+    .variant-meta {
+        font-size: 0.72rem;
+        font-weight: 500;
+        line-height: 1.2;
+    }
+
+    .variant-card-active {
+        border: 2px solid #dc3545;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, .12);
+        transform: scale(1.02);
+    }
+</style>
+<script type="text/javascript">
+    const current = document.getElementById("current");
+    const opacity = 0.6;
+    const imgs = document.querySelectorAll(".img");
+    if (current && imgs.length) {
+        imgs.forEach(img => {
+            img.addEventListener("click", (e) => {
+                imgs.forEach(i => i.style.opacity = 1);
+                current.src = e.target.src;
+                e.target.style.opacity = opacity;
+            });
+        });
+    }
+</script>
+</body>
+</html>
