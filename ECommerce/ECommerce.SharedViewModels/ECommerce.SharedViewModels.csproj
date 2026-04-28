@@ -7,11 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\ECommerce.Application\DTOs\Request\**\*.cs" Link="DTOs\Request\%(RecursiveDir)%(Filename)%(Extension)" />
-    <Compile Include="..\ECommerce.Application\DTOs\Response\**\*.cs" Link="DTOs\Response\%(RecursiveDir)%(Filename)%(Extension)" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\ECommerce.Domain\ECommerce.Domain.csproj" />
   </ItemGroup>
 
