@@ -5,6 +5,7 @@ using ECommerce.Application.Validators;
 using ECommerce.Infrastructure;
 using ECommerce.Infrastructure.Persistence;
 using FluentValidation;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.OpenApi;
 using System.Text.Json.Serialization;
 
@@ -43,6 +44,7 @@ builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateProductRequestValidator>();
+builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
@@ -53,6 +55,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
