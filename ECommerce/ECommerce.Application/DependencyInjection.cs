@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Text;
-using ECommerce.Application.DTOs.Request;
+using ECommerce.SharedViewModels.DTOs.Request;
 using ECommerce.Application.Interfaces;
 using ECommerce.Application.Services;
 using ECommerce.Application.Validators;
@@ -22,7 +22,7 @@ namespace ECommerce.Application
 
             // Register validators
             services.AddTransient<FluentValidation.IValidator<UpdateVariantRequest>, UpdateVariantRequestValidator>();
-            services.AddTransient<FluentValidation.IValidator<ECommerce.Application.DTOs.Request.CreateVariantRequest>, CreateVariantRequestValidator>();
+            services.AddTransient<FluentValidation.IValidator<ECommerce.SharedViewModels.DTOs.Request.CreateVariantRequest>, CreateVariantRequestValidator>();
             services.AddTransient<FluentValidation.IValidator<CreateVariantRequest>, CreateVariantRequestValidator>();
 
             return services;

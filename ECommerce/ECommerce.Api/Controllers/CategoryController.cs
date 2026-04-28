@@ -1,5 +1,5 @@
 using Azure.Core;
-using ECommerce.Application.DTOs.Request;
+using ECommerce.SharedViewModels.DTOs.Request;
 using ECommerce.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

@@ -1,4 +1,4 @@
-using ECommerce.Application.DTOs.Response;
+using ECommerce.SharedViewModels.DTOs.Response;
 using ECommerce.Application.Interfaces;
 using ECommerce.Domain.Common;
 using ECommerce.Domain.QueryParameters;
@@ -15,14 +15,14 @@ namespace ECommerce.Application.Services
     {
         private readonly IProductRepository _productRepository;
         private readonly IProductVariantRepository _productVariantRepository;
-        private readonly FluentValidation.IValidator<ECommerce.Application.DTOs.Request.UpdateVariantRequest> _updateValidator;
-        private readonly FluentValidation.IValidator<ECommerce.Application.DTOs.Request.CreateVariantRequest> _createValidator;
+        private readonly FluentValidation.IValidator<ECommerce.SharedViewModels.DTOs.Request.UpdateVariantRequest> _updateValidator;
+        private readonly FluentValidation.IValidator<ECommerce.SharedViewModels.DTOs.Request.CreateVariantRequest> _createValidator;
 
         public VariantService(
             IProductRepository productRepository,
             IProductVariantRepository productVariantRepository,
-            FluentValidation.IValidator<ECommerce.Application.DTOs.Request.UpdateVariantRequest> updateValidator,
-            FluentValidation.IValidator<ECommerce.Application.DTOs.Request.CreateVariantRequest> createValidator)
+            FluentValidation.IValidator<ECommerce.SharedViewModels.DTOs.Request.UpdateVariantRequest> updateValidator,
+            FluentValidation.IValidator<ECommerce.SharedViewModels.DTOs.Request.CreateVariantRequest> createValidator)
         {
             _productRepository = productRepository;
             _productVariantRepository = productVariantRepository;
@@ -45,7 +45,7 @@ namespace ECommerce.Application.Services
             return variant.ToDetailsResponse();
         }
 
-        public async Task<int> CreateVariantAsync(int productId, ECommerce.Application.DTOs.Request.CreateVariantRequest request)
+        public async Task<int> CreateVariantAsync(int productId, ECommerce.SharedViewModels.DTOs.Request.CreateVariantRequest request)
         {
             // Validate
             if (_createValidator != null)
@@ -80,7 +80,7 @@ namespace ECommerce.Application.Services
             return variant.Id;
         }
 
-        public async Task UpdateVariantByIdAsync(int variantId, ECommerce.Application.DTOs.Request.UpdateVariantRequest request)
+        public async Task UpdateVariantByIdAsync(int variantId, ECommerce.SharedViewModels.DTOs.Request.UpdateVariantRequest request)
         {
             // Validate request
             if (_updateValidator != null)

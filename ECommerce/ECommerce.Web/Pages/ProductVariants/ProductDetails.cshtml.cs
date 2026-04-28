@@ -1,5 +1,5 @@
 using System.Text.Json;
-using ECommerce.Application.DTOs.Response;
+using ECommerce.SharedViewModels.DTOs.Response;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace ECommerce.Web.Pages.ProductVariants

@@ -1,4 +1,4 @@
-namespace ECommerce.Application.DTOs.Response
+namespace ECommerce.SharedViewModels.DTOs.Response
 {
     public class ReviewResponseDetailsDto
     {

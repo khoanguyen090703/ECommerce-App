@@ -1,4 +1,4 @@
-﻿using ECommerce.Application.DTOs.Request;
+﻿using ECommerce.SharedViewModels.DTOs.Request;
 using ECommerce.Application.Interfaces;
 using ECommerce.Domain.QueryParameters;
 using Microsoft.AspNetCore.Mvc;
@@ -60,7 +60,7 @@ namespace ECommerce.Api.Controllers
         }
 
         [HttpPatch("{id:int:min(1)}/status")]
-        public async Task<IActionResult> UpdateStatus(int id, [FromBody] ECommerce.Application.DTOs.Request.UpdateProductStatusRequest request)
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] ECommerce.SharedViewModels.DTOs.Request.UpdateProductStatusRequest request)
         {
             if (id <= 0)
                 return BadRequest("Invalid product id.");

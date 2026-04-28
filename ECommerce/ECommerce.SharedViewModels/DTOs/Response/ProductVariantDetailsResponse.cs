@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace ECommerce.Application.DTOs.Response
+namespace ECommerce.SharedViewModels.DTOs.Response
 {
     public class ProductVariantDetailsResponse
     {

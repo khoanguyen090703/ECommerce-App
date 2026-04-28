@@ -1,4 +1,4 @@
-using ECommerce.Application.DTOs.Response;
+using ECommerce.SharedViewModels.DTOs.Response;
 using System.Collections.Generic;
 using ECommerce.Domain.Common;
 using System.Threading.Tasks;

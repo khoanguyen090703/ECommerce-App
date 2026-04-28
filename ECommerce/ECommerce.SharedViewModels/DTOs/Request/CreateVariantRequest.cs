@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using ECommerce.Domain.Enums;
 
-namespace ECommerce.Application.DTOs.Request
+namespace ECommerce.SharedViewModels.DTOs.Request
 {
     public class CreateVariantRequest
     {

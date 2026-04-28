@@ -1,4 +1,4 @@
-using ECommerce.Application.DTOs.Request;
+using ECommerce.SharedViewModels.DTOs.Request;
 using FluentValidation;
 
 namespace ECommerce.Application.Validators

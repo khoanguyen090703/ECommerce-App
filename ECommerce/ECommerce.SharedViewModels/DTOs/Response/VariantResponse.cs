@@ -1,7 +1,7 @@
 using ECommerce.Domain.Enums;
 using System;
 
-namespace ECommerce.Application.DTOs.Response
+namespace ECommerce.SharedViewModels.DTOs.Response
 {
     public class VariantResponse
     {

@@ -1,4 +1,4 @@
-using ECommerce.Application.DTOs.Response;
+using ECommerce.SharedViewModels.DTOs.Response;
 using ECommerce.Domain.Entities;
 using System.Linq;
 

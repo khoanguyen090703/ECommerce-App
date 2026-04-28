@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace ECommerce.Application.DTOs.Response
+namespace ECommerce.SharedViewModels.DTOs.Response
 {
     public class ProductResponse4List
     {

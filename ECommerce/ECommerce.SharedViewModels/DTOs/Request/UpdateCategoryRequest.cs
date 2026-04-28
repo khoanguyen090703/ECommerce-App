@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ECommerce.Application.DTOs.Request
+namespace ECommerce.SharedViewModels.DTOs.Request
 {
     public class UpdateCategoryRequest
     {

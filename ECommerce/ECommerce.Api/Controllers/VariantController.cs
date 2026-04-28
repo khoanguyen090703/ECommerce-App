@@ -52,7 +52,7 @@ namespace ECommerce.Api.Controllers
         }
 
         [HttpPut("{id:int:min(1)}")]
-        public async Task<IActionResult> Update(int id, [FromBody] ECommerce.Application.DTOs.Request.UpdateVariantRequest request)
+        public async Task<IActionResult> Update(int id, [FromBody] ECommerce.SharedViewModels.DTOs.Request.UpdateVariantRequest request)
         {
             if (id <= 0)
                 return BadRequest("Invalid variant id.");
@@ -61,7 +61,7 @@ namespace ECommerce.Api.Controllers
             return NoContent();
         }
         [HttpPost("product/{productId:int:min(1)}")]
-        public async Task<IActionResult> Create(int productId, [FromBody] ECommerce.Application.DTOs.Request.CreateVariantRequest request)
+        public async Task<IActionResult> Create(int productId, [FromBody] ECommerce.SharedViewModels.DTOs.Request.CreateVariantRequest request)
         {
             if (productId <= 0)
                 return BadRequest("Invalid product id.");
@@ -80,7 +80,7 @@ namespace ECommerce.Api.Controllers
             return NoContent();
         }
         [HttpPatch("{id:int:min(1)}/status")]
-        public async Task<IActionResult> UpdateStatus(int id, [FromBody] ECommerce.Application.DTOs.Request.UpdateVariantStatusRequest request)
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] ECommerce.SharedViewModels.DTOs.Request.UpdateVariantStatusRequest request)
         {
             if (id <= 0)
                 return BadRequest("Invalid variant id.");

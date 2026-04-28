@@ -1,5 +1,5 @@
-﻿using ECommerce.Application.DTOs.Request;
-using ECommerce.Application.DTOs.Response;
+﻿using ECommerce.SharedViewModels.DTOs.Request;
+using ECommerce.SharedViewModels.DTOs.Response;
 using System;
 using System.Collections.Generic;
 using System.Text;
