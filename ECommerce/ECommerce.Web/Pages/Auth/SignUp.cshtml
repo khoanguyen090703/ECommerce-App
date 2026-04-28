@@ -1,0 +1,85 @@
+﻿@page
+@model ECommerce.Web.Pages.Auth.SignUpModel
+@{
+    ViewData["Title"] = "Sign Up";
+}
+
+<section class="py-5" style="background-color:#f8f9fa; min-height:70vh;">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-6">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-4 p-md-5">
+                        <h2 class="mb-2 text-center">Create account</h2>
+                        <p class="text-muted text-center mb-4">Sign up to start shopping.</p>
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3"></div>
+
+                        <form method="post" novalidate>
+                            <div class="mb-3">
+                                <label asp-for="Input.FullName" class="form-label"></label>
+                                <input asp-for="Input.FullName" class="form-control" placeholder="Your full name" autocomplete="name" />
+                                <span asp-validation-for="Input.FullName" class="text-danger"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Input.Email" class="form-label"></label>
+                                <input asp-for="Input.Email" class="form-control" placeholder="you@example.com" autocomplete="email" />
+                                <span asp-validation-for="Input.Email" class="text-danger"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Input.Password" class="form-label"></label>
+                                <div class="input-group">
+                                    <input asp-for="Input.Password" class="form-control" autocomplete="new-password" id="signup-password" />
+                                    <button class="btn btn-outline-secondary" type="button" id="toggle-password">Hiện</button>
+                                </div>
+                                <span asp-validation-for="Input.Password" class="text-danger"></span>
+                            </div>
+
+                            <div class="mb-4">
+                                <label asp-for="Input.ConfirmPassword" class="form-label"></label>
+                                <div class="input-group">
+                                    <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" id="signup-confirm-password" />
+                                    <button class="btn btn-outline-secondary" type="button" id="toggle-confirm-password">Hiện</button>
+                                </div>
+                                <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+                            </div>
+
+                            <button type="submit" class="btn w-100" style="background-color:#d35400;color:#ffffff;border-color:#d35400;">
+                                Sign Up
+                            </button>
+                        </form>
+
+                        <div class="text-center mt-3">
+                            <span class="text-muted">Already have an account?</span>
+                            <a href="/Auth/SignIn" class="text-decoration-none ms-1">Sign In</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            function wirePasswordToggle(inputId, buttonId) {
+                const input = document.getElementById(inputId);
+                const button = document.getElementById(buttonId);
+                if (!input || !button) return;
+
+                button.addEventListener("click", function () {
+                    const isPassword = input.type === "password";
+                    input.type = isPassword ? "text" : "password";
+                    button.textContent = isPassword ? "Ẩn" : "Hiện";
+                });
+            }
+
+            wirePasswordToggle("signup-password", "toggle-password");
+            wirePasswordToggle("signup-confirm-password", "toggle-confirm-password");
+        })();
+    </script>
+}

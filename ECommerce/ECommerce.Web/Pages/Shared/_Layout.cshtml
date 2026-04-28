@@ -19,6 +19,95 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Open+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <style>
+        .avatar-menu-wrapper {
+            position: relative;
+        }
+
+        .avatar-trigger {
+            background: transparent;
+            border: 0;
+            padding: 0;
+            cursor: pointer;
+        }
+
+        .avatar-hover-info {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            min-width: 220px;
+            background: #ffffff;
+            color: #1f2937;
+            border-radius: 10px;
+            padding: 10px 12px;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+            border: 1px solid #e5e7eb;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(4px);
+            transition: all 0.18s ease;
+            z-index: 1051;
+            pointer-events: none;
+        }
+
+        .avatar-menu-wrapper:hover .avatar-hover-info {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .avatar-hover-name {
+            font-weight: 700;
+            font-size: 14px;
+            line-height: 1.2;
+        }
+
+        .avatar-hover-email {
+            font-size: 13px;
+            color: #4b5563;
+            margin-top: 2px;
+            word-break: break-word;
+        }
+
+        .avatar-popup {
+            position: absolute;
+            top: calc(100% + 12px);
+            right: 0;
+            width: 280px;
+            background: #ffffff;
+            color: #111827;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 16px 30px rgba(0, 0, 0, 0.2);
+            padding: 14px;
+            z-index: 1060;
+            display: none;
+        }
+
+        .avatar-popup.show {
+            display: block;
+        }
+
+        .avatar-popup-close {
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            border: 0;
+            background: transparent;
+            font-size: 20px;
+            line-height: 1;
+            color: #6b7280;
+            cursor: pointer;
+        }
+
+        .avatar-popup-email {
+            font-size: 13px;
+            color: #4b5563;
+            margin-bottom: 12px;
+            word-break: break-word;
+            padding-right: 18px;
+        }
+    </style>
 
 </head>
 <body>
@@ -77,49 +166,52 @@
         </div>
     </div>
 
-    @* Shopping Cart *@
-    <div class="offcanvas offcanvas-end" data-bs-scroll="true" tabindex="-1" id="offcanvasCart" aria-labelledby="My Cart">
-        <div class="offcanvas-header justify-content-center">
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-        </div>
-        <div class="offcanvas-body">
-            <div class="order-md-last">
-                <h4 class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="text-primary">Your cart</span>
-                    <span class="badge bg-primary rounded-pill">3</span>
-                </h4>
-                <ul class="list-group mb-3">
-                    <li class="list-group-item d-flex justify-content-between lh-sm">
-                        <div>
-                            <h6 class="my-0">Growers cider</h6>
-                            <small class="text-body-secondary">Brief description</small>
-                        </div>
-                        <span class="text-body-secondary">$12</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between lh-sm">
-                        <div>
-                            <h6 class="my-0">Fresh grapes</h6>
-                            <small class="text-body-secondary">Brief description</small>
-                        </div>
-                        <span class="text-body-secondary">$8</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between lh-sm">
-                        <div>
-                            <h6 class="my-0">Heinz tomato ketchup</h6>
-                            <small class="text-body-secondary">Brief description</small>
-                        </div>
-                        <span class="text-body-secondary">$5</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span>Total (USD)</span>
-                        <strong>$20</strong>
-                    </li>
-                </ul>
-  
-                <button class="w-100 btn btn-primary btn-lg" type="submit">Continue to checkout</button>
+    @if (User?.Identity?.IsAuthenticated == true)
+    {
+        @* Shopping Cart *@
+        <div class="offcanvas offcanvas-end" data-bs-scroll="true" tabindex="-1" id="offcanvasCart" aria-labelledby="My Cart">
+            <div class="offcanvas-header justify-content-center">
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                <div class="order-md-last">
+                    <h4 class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-primary">Your cart</span>
+                        <span class="badge bg-primary rounded-pill">3</span>
+                    </h4>
+                    <ul class="list-group mb-3">
+                        <li class="list-group-item d-flex justify-content-between lh-sm">
+                            <div>
+                                <h6 class="my-0">Growers cider</h6>
+                                <small class="text-body-secondary">Brief description</small>
+                            </div>
+                            <span class="text-body-secondary">$12</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between lh-sm">
+                            <div>
+                                <h6 class="my-0">Fresh grapes</h6>
+                                <small class="text-body-secondary">Brief description</small>
+                            </div>
+                            <span class="text-body-secondary">$8</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between lh-sm">
+                            <div>
+                                <h6 class="my-0">Heinz tomato ketchup</h6>
+                                <small class="text-body-secondary">Brief description</small>
+                            </div>
+                            <span class="text-body-secondary">$5</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Total (USD)</span>
+                            <strong>$20</strong>
+                        </li>
+                    </ul>
+
+                    <button class="w-100 btn btn-primary btn-lg" type="submit">Continue to checkout</button>
+                </div>
             </div>
         </div>
-    </div>
+    }
 
     @* Search bar *@
     <div class="offcanvas offcanvas-end" data-bs-scroll="true" tabindex="-1" id="offcanvasSearch" aria-labelledby="Search">
@@ -163,30 +255,56 @@
                     @{
                         var cartCount = (ViewBag.CartItemCount as int?) ?? 0;
                         var isAuthenticated = User?.Identity?.IsAuthenticated == true;
-                        var userName = isAuthenticated ? User.Identity?.Name : null;
-                        var avatarUrl = User?.FindFirst("picture")?.Value ?? Url.Content("~/images/avatar-placeholder.png");
+                        var hardcodedFullName = "Nguyen Van A";
+                        var hardcodedEmail = "nguyenvana@example.com";
+                        var userName = isAuthenticated
+                            ? (User?.Identity?.Name ?? User?.FindFirst("email")?.Value ?? "User")
+                            : null;
+                        var defaultAvatarUrl = Url.Content("~/images/avatar.webp");
+                        var avatarUrl = string.IsNullOrWhiteSpace(User?.FindFirst("picture")?.Value)
+                            ? defaultAvatarUrl
+                            : User.FindFirst("picture")!.Value;
                     }
 
                     <div class="user-area d-flex align-items-center gap-2">
                         @if (isAuthenticated)
                         {
-                            <a class="d-flex align-items-center text-decoration-none text-white" href="/Account/Profile">
-                                <img src="@avatarUrl" alt="avatar" class="rounded-circle" style="width:36px;height:36px;object-fit:cover;border:2px solid rgba(255,255,255,0.15);" />
-                                <span class="ms-2 text-white">@userName</span>
-                            </a>
+                            <div class="avatar-menu-wrapper" id="avatarMenuWrapper">
+                                <button type="button" class="avatar-trigger d-flex align-items-center text-decoration-none" id="avatarTrigger" aria-label="Open profile menu">
+                                    <img src="@avatarUrl" alt="avatar" class="rounded-circle" style="width:38px;height:38px;object-fit:cover;border:2px solid rgba(255,255,255,0.25);" />
+                                </button>
+
+                                <div class="avatar-hover-info">
+                                    <div class="avatar-hover-name">@hardcodedFullName</div>
+                                    <div class="avatar-hover-email">@hardcodedEmail</div>
+                                </div>
+
+                                <div class="avatar-popup" id="avatarPopup">
+                                    <button type="button" class="avatar-popup-close" id="avatarPopupClose" aria-label="Close popup">&times;</button>
+                                    <div class="avatar-popup-email">@hardcodedEmail</div>
+                                    <div class="text-center mb-3">
+                                        <img src="@avatarUrl" alt="avatar popup" class="rounded-circle" style="width:58px;height:58px;object-fit:cover;border:2px solid #e5e7eb;" />
+                                    </div>
+                                    <div class="text-center fw-semibold mb-3">Hello @hardcodedFullName</div>
+                                    <button type="button" class="btn btn-outline-danger w-100">Sign out</button>
+                                </div>
+                            </div>
                         }
                         else
                         {
-                            <a class="btn" href="/Identity/Account/Login" style="background-color:#d35400;color:#ffffff;border-color:#d35400;">Login</a>
+                            <a class="btn" href="/Auth/SignIn" style="background-color:#d35400;color:#ffffff;border-color:#d35400;">Sign In</a>
                         }
                     </div>
 
-                    <div>
-                        <button class="btn btn-link position-relative text-white" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasCart" aria-controls="offcanvasCart">
-                            <svg class="icon" width="24" height="24" role="img" aria-hidden="true"><use xlink:href="#cart"></use></svg>
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary">@cartCount</span>
-                        </button>
-                    </div>
+                    @if (isAuthenticated)
+                    {
+                        <div>
+                            <button class="btn btn-link position-relative text-white" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasCart" aria-controls="offcanvasCart">
+                                <svg class="icon" width="24" height="24" role="img" aria-hidden="true"><use xlink:href="#cart"></use></svg>
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary">@cartCount</span>
+                            </button>
+                        </div>
+                    }
                 </div>
             </div>
 
@@ -259,6 +377,37 @@
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous"></script>
         <script src="~/js/plugins.js"></script>
         <script src="~/js/script.js"></script>
+        <script>
+            (function () {
+                const avatarTrigger = document.getElementById("avatarTrigger");
+                const avatarPopup = document.getElementById("avatarPopup");
+                const avatarPopupClose = document.getElementById("avatarPopupClose");
+                const avatarMenuWrapper = document.getElementById("avatarMenuWrapper");
+
+                if (!avatarTrigger || !avatarPopup || !avatarMenuWrapper) {
+                    return;
+                }
+
+                avatarTrigger.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    avatarPopup.classList.toggle("show");
+                });
+
+                if (avatarPopupClose) {
+                    avatarPopupClose.addEventListener("click", function (event) {
+                        event.stopPropagation();
+                        avatarPopup.classList.remove("show");
+                    });
+                }
+
+                document.addEventListener("click", function (event) {
+                    if (!avatarMenuWrapper.contains(event.target)) {
+                        avatarPopup.classList.remove("show");
+                    }
+                });
+            })();
+        </script>
         @await RenderSectionAsync("Scripts", required: false)
 </body>
 
