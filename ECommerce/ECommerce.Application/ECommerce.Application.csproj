@@ -16,7 +16,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="DTOs\Request\**\*.cs" />
+    <Compile Remove="DTOs\Response\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\ECommerce.Domain\ECommerce.Domain.csproj" />
+    <ProjectReference Include="..\ECommerce.SharedViewModels\ECommerce.SharedViewModels.csproj" />
   </ItemGroup>
 
   <ItemGroup>

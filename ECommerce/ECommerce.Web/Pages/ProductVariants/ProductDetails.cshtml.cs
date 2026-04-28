@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ECommerce.Application.DTOs.Response;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace ECommerce.Web.Pages.ProductVariants
@@ -14,7 +15,7 @@ namespace ECommerce.Web.Pages.ProductVariants
             _configuration = configuration;
         }
 
-        public VariantDetails4CusViewModel? VariantDetails { get; set; }
+        public VariantDetails4Cus? VariantDetails { get; set; }
         public int CurrentVariantId { get; set; }
         public string? ErrorMessage { get; set; }
 
@@ -40,7 +41,7 @@ namespace ECommerce.Web.Pages.ProductVariants
                 }
 
                 var content = await response.Content.ReadAsStringAsync();
-                VariantDetails = JsonSerializer.Deserialize<VariantDetails4CusViewModel>(
+                VariantDetails = JsonSerializer.Deserialize<VariantDetails4Cus>(
                     content,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
@@ -56,28 +57,4 @@ namespace ECommerce.Web.Pages.ProductVariants
         }
     }
 
-    public class VariantDetails4CusViewModel
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public string Brand { get; set; } = string.Empty;
-        public string Categories { get; set; } = string.Empty;
-        public string Status { get; set; } = string.Empty;
-        public double AverageRating { get; set; }
-        public int TotalReviews { get; set; }
-        public int SoldQuantity { get; set; }
-        public decimal Price { get; set; }
-        public List<string> ImageUrls { get; set; } = new();
-        public List<Variant4CusProdDetailsViewModel> ProductVariants { get; set; } = new();
-    }
-
-    public class Variant4CusProdDetailsViewModel
-    {
-        public int Id { get; set; }
-        public string Format { get; set; } = string.Empty;
-        public string Volumn { get; set; } = string.Empty;
-        public decimal Price { get; set; }
-        public string ImageUrl { get; set; } = string.Empty;
-    }
 }

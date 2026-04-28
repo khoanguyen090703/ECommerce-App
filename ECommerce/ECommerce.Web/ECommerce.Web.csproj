@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ECommerce.SharedViewModels\ECommerce.SharedViewModels.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="Pages\Shared\ViewComponents\" />
   </ItemGroup>
 

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Text.Json;
+using ECommerce.Application.DTOs.Response;
 
 namespace ECommerce.Web.Pages
 {
@@ -15,8 +16,8 @@ namespace ECommerce.Web.Pages
             _configuration = configuration;
         }
 
-        public List<CategoryViewModel> Categories { get; set; } = new();
-        public List<VariantViewModel> FeaturedProducts { get; set; } = new();
+        public List<CategoryResponse> Categories { get; set; } = new();
+        public List<VariantResponse> FeaturedProducts { get; set; } = new();
 
         public async Task OnGetAsync()
         {
@@ -29,14 +30,14 @@ namespace ECommerce.Web.Pages
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    Categories = JsonSerializer.Deserialize<List<CategoryViewModel>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                    Categories = JsonSerializer.Deserialize<List<CategoryResponse>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
                 }
 
                 var featuredResponse = await client.GetAsync($"{apiUrl}/api/variants/featured");
                 if (featuredResponse.IsSuccessStatusCode)
                 {
                     var featuredContent = await featuredResponse.Content.ReadAsStringAsync();
-                    FeaturedProducts = JsonSerializer.Deserialize<List<VariantViewModel>>(featuredContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                    FeaturedProducts = JsonSerializer.Deserialize<List<VariantResponse>>(featuredContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
                 }
             }
             catch (Exception)
@@ -46,20 +47,4 @@ namespace ECommerce.Web.Pages
         }
     }
 
-    public class CategoryViewModel
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = default!;
-        public string? Description { get; set; }
-        public string? ImageUrl { get; set; }
-    }
-
-    public class VariantViewModel
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = default!;
-        public decimal Price { get; set; }
-        public string Status { get; set; } = default!;
-        public string ImageUrl { get; set; } = string.Empty;
-    }
 }

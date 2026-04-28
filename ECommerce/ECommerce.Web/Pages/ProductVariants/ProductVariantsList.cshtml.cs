@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Text.Json;
+using ECommerce.Application.DTOs.Response;
 
 namespace ECommerce.Web.Pages.ProductVariants
 {
@@ -38,7 +39,7 @@ namespace ECommerce.Web.Pages.ProductVariants
 
         public int PageSize { get; set; } = 12;
 
-        public PagedResult<VariantViewModel> VariantsData { get; set; } = new();
+        public PagedResult<VariantResponse> VariantsData { get; set; } = new();
         public List<FilterItemViewModel> Categories { get; set; } = new();
         public List<FilterItemViewModel> Brands { get; set; } = new();
         public List<FilterItemViewModel> ScentFamilies { get; set; } = new();
@@ -55,14 +56,15 @@ namespace ECommerce.Web.Pages.ProductVariants
                 if (catResponse.IsSuccessStatusCode)
                 {
                     var content = await catResponse.Content.ReadAsStringAsync();
-                    Categories = JsonSerializer.Deserialize<List<FilterItemViewModel>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                    var categoryDtos = JsonSerializer.Deserialize<List<CategoryResponse>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                    Categories = categoryDtos.Select(c => new FilterItemViewModel { Id = c.Id, Name = c.Name }).ToList();
                 }
 
                 var brandResponse = await client.GetAsync($"{apiUrl}/api/brands/all");
                 if (brandResponse.IsSuccessStatusCode)
                 {
                     var content = await brandResponse.Content.ReadAsStringAsync();
-                    var brandDtoList = JsonSerializer.Deserialize<List<BrandDto>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                    var brandDtoList = JsonSerializer.Deserialize<List<BrandResponse>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
                     Brands = brandDtoList.Select(b => new FilterItemViewModel { Id = b.Id, Name = b.Name }).ToList();
                 }
 
@@ -70,7 +72,7 @@ namespace ECommerce.Web.Pages.ProductVariants
                 if (sfResponse.IsSuccessStatusCode)
                 {
                     var content = await sfResponse.Content.ReadAsStringAsync();
-                    var sfDtoList = JsonSerializer.Deserialize<List<ScentFamilyDto>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                    var sfDtoList = JsonSerializer.Deserialize<List<ScentFamilyResponse>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
                     ScentFamilies = sfDtoList.Select(sf => new FilterItemViewModel { Id = sf.Id, Name = sf.Name }).ToList();
                 }
 
@@ -96,7 +98,7 @@ namespace ECommerce.Web.Pages.ProductVariants
                 if (varResponse.IsSuccessStatusCode)
                 {
                     var content = await varResponse.Content.ReadAsStringAsync();
-                    VariantsData = JsonSerializer.Deserialize<PagedResult<VariantViewModel>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                    VariantsData = JsonSerializer.Deserialize<PagedResult<VariantResponse>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
                 }
             }
             catch (Exception ex)
@@ -107,32 +109,10 @@ namespace ECommerce.Web.Pages.ProductVariants
         }
     }
 
-    // Intermediate DTOs to handle different shapes if any
-    public class BrandDto
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = default!;
-    }
-
-    public class ScentFamilyDto
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = default!;
-    }
-
     public class FilterItemViewModel
     {
         public int Id { get; set; }
         public string Name { get; set; } = default!;
-    }
-
-    public class VariantViewModel
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = default!;
-        public decimal Price { get; set; }
-        public string Status { get; set; } = default!;
-        public string ImageUrl { get; set; } = string.Empty;
     }
 
     public class PagedResult<T>
