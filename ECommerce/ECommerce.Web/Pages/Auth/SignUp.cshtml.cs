@@ -20,9 +20,6 @@ namespace ECommerce.Web.Pages.Auth
         [BindProperty]
         public SignUpInputModel Input { get; set; } = new();
 
-        [TempData]
-        public string? SuccessMessage { get; set; }
-
         public void OnGet()
         {
         }
@@ -54,8 +51,9 @@ namespace ECommerce.Web.Pages.Auth
                     return Page();
                 }
 
-                SuccessMessage = authResponse.Message;
-                return RedirectToPage("/Auth/SignIn");
+                HttpContext.Session.SetString("PendingConfirmationEmail", Input.Email);
+                HttpContext.Session.SetString("EmailConfirmNeedsCooldown", "1");
+                return RedirectToPage("/Auth/SignUpConfirmation");
             }
             catch
             {

@@ -2,12 +2,14 @@
 using ECommerce.Application.Interfaces;
 using ECommerce.Domain.Entities;
 using ECommerce.Domain.Interfaces;
+using ECommerce.Infrastructure.Services;
 using ECommerce.SharedViewModels.DTOs.Auth;
 using Mapster;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -27,18 +29,22 @@ namespace ECommerce.Infrastructure.Identity
 
         private readonly ICustomerRepository _customerRepository;
 
+        private readonly IConfiguration _configuration;
+
         public AuthService(
             UserManager<AppUser> userManager,
             ITokenService tokenService,
             IEmailService emailService,
             IUnitOfWork unitOfWork,
-            ICustomerRepository customerRepository)
+            ICustomerRepository customerRepository,
+            IConfiguration configuration)
         {
             _userManager = userManager;
             _tokenService = tokenService;
             _emailService = emailService;
             _unitOfWork = unitOfWork;
             _customerRepository = customerRepository;
+            _configuration = configuration;
         }
 
         public async Task<AuthResponse> ConfirmEmailAsync(string userId, string token)
@@ -138,6 +144,27 @@ namespace ECommerce.Infrastructure.Identity
             };
         }
 
+        public async Task<AuthResponse> ResendEmailConfirmationAsync(ResendEmailConfirmationRequest request)
+        {
+            var user = await _userManager.FindByEmailAsync(request.Email);
+
+            // Bảo mật: Nếu user không tồn tại, ta vẫn báo thành công để hacker không dò được email
+            if (user == null)
+                return new AuthResponse { IsSuccess = true, Message = "If email is valid, confirmation link is sent." };
+
+            // Kiểm tra xem email đã được xác nhận chưa
+            if (await _userManager.IsEmailConfirmedAsync(user))
+                return new AuthResponse { IsSuccess = false, Message = "This email is already confirmed. Please sign in." };
+
+            await SendEmailConfirmation(user);
+
+            return new AuthResponse
+            {
+                IsSuccess = true,
+                Message = "Resent confirmation email successfully."
+            };
+        }
+
         public async Task<AuthResponse> SignInAsync(SignInRequest request)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);
@@ -173,7 +200,7 @@ namespace ECommerce.Infrastructure.Identity
             };
         }
 
-        public async Task<AuthResponse> SignUpAsync(SignUpRequest request, string originUrl)
+        public async Task<AuthResponse> SignUpAsync(SignUpRequest request)
         {
             var existingUser = await _userManager.FindByEmailAsync(request.Email);
             if(existingUser != null)
@@ -237,7 +264,7 @@ namespace ECommerce.Infrastructure.Identity
             }
             
             // Handle send email confirmation
-            await SendEmailConfirmation(user, originUrl);
+            await SendEmailConfirmation(user);
 
             return new AuthResponse
             {
@@ -246,15 +273,35 @@ namespace ECommerce.Infrastructure.Identity
             };
         }
 
-        private async Task SendEmailConfirmation(AppUser user, string originUrl)
+        private async Task SendEmailConfirmation(AppUser user)
         {
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-
-            var confirmationLink = $"{originUrl}/api/auth/confirm-email?userId={user.Id}&token={encodedToken}";
+            var confirmationLink = BuildClientEmailConfirmationLink(user.Id.ToString(), encodedToken);
             var emailBody = $"Vui lòng xác nhận tài khoản bằng cách click vào link: <a href='{confirmationLink}'>Xác nhận Email</a>";
 
             await _emailService.SendEmailAsync(user.Email!, "Xác nhận đăng ký tài khoản", emailBody);
+        }
+
+        /// <summary>
+        /// Link tới trang xác nhận trên frontend (ClientSettings), kèm userId và token.
+        /// </summary>
+        private string BuildClientEmailConfirmationLink(string userId, string encodedToken)
+        {
+            var baseUrl = (_configuration["ClientSettings:FrontendUrl"] ?? string.Empty).Trim().TrimEnd('/');
+            if (string.IsNullOrEmpty(baseUrl))
+                throw new InvalidOperationException("Cấu hình ClientSettings:FrontendUrl chưa được thiết lập.");
+
+            var path = (_configuration["ClientSettings:EmailConfirmationPath"] ?? "/Auth/ConfirmEmail").Trim();
+            if (!path.StartsWith('/'))
+                path = "/" + path;
+
+            var url = baseUrl + path;
+            return QueryHelpers.AddQueryString(url, new Dictionary<string, string?>
+            {
+                ["userId"] = userId,
+                ["token"] = encodedToken
+            });
         }
     }
 }

@@ -1,3 +1,4 @@
+using ECommerce.Web.Auth;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -5,13 +6,13 @@ namespace ECommerce.Web.Pages.Auth;
 
 public class LogoutModel : PageModel
 {
+    private readonly IAuthSessionManager _authSessionManager;
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly IConfiguration _configuration;
 
-    public LogoutModel(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+    public LogoutModel(IHttpClientFactory httpClientFactory, IAuthSessionManager authSessionManager)
     {
         _httpClientFactory = httpClientFactory;
-        _configuration = configuration;
+        _authSessionManager = authSessionManager;
     }
 
     public IActionResult OnGet()
@@ -21,16 +22,14 @@ public class LogoutModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var accessToken = Request.Cookies["access_token"];
-        var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "http://localhost:5206";
+        var accessToken = _authSessionManager.GetAccessToken(HttpContext);
 
         if (!string.IsNullOrWhiteSpace(accessToken))
         {
             try
             {
                 var client = _httpClientFactory.CreateClient();
-                using var request = new HttpRequestMessage(HttpMethod.Post, $"{apiBaseUrl}/api/auth/logout");
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+                using var request = new HttpRequestMessage(HttpMethod.Post, "api/auth/logout");
                 await client.SendAsync(request);
             }
             catch
@@ -39,22 +38,8 @@ public class LogoutModel : PageModel
             }
         }
 
-        ClearAuthCookies();
+        _authSessionManager.ClearTokens(HttpContext);
 
         return RedirectToPage("/Auth/SignIn", new { signedOut = true });
-    }
-
-    private void ClearAuthCookies()
-    {
-        var expired = new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = Request.IsHttps,
-            SameSite = SameSiteMode.Strict,
-            Expires = DateTimeOffset.UtcNow.AddYears(-1)
-        };
-
-        Response.Cookies.Append("access_token", string.Empty, expired);
-        Response.Cookies.Append("refresh_token", string.Empty, expired);
     }
 }

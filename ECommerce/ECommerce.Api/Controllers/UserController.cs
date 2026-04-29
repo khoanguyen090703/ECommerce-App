@@ -7,7 +7,7 @@ namespace ECommerce.Api.Controllers;
 [ApiController]
 [Route("api/users")]
 [Authorize]
-public class UserController : ControllerBase
+public class UserController : Controller
 {
     private readonly IUserService _userService;
 

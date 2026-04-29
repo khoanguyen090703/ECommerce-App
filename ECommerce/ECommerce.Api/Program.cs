@@ -6,6 +6,7 @@ using ECommerce.Infrastructure;
 using ECommerce.Infrastructure.Persistence;
 using FluentValidation;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi;
 using System.Text.Json.Serialization;
 
@@ -45,6 +46,18 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateProductRequestValidator>();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddAuthorization();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("email-protection", opt =>
+    {
+        opt.Window = TimeSpan.FromMinutes(10);
+        opt.PermitLimit = 3;
+        opt.QueueLimit = 0;
+        opt.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+    });
+});
 
 var app = builder.Build();
 
@@ -61,8 +74,9 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
 
+app.UseRateLimiter();
+
 app.UseExceptionHandler();
-app.UseHttpsRedirection();
 
 app.UseRouting();
 

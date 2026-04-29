@@ -1,0 +1,33 @@
+﻿@page
+@model ECommerce.Web.Pages.Auth.ConfirmEmailModel
+@{
+    ViewData["Title"] = "Xác nhận email";
+}
+
+<section class="py-5" style="background-color:#f8f9fa; min-height:50vh;">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-6">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-4 p-md-5 text-center">
+                        @if (Model.IsSuccess)
+                        {
+                            <div class="mb-3 text-success" style="font-size:2.5rem;" aria-hidden="true">✓</div>
+                            <h2 class="h4 mb-3">Xác nhận thành công</h2>
+                            <p class="text-muted mb-4">@Model.Message</p>
+                            <a class="btn" asp-page="/Auth/SignIn" style="background-color:#d35400;color:#ffffff;border-color:#d35400;">Đăng nhập</a>
+                        }
+                        else
+                        {
+                            <div class="mb-3 text-danger" style="font-size:2.5rem;" aria-hidden="true">✕</div>
+                            <h2 class="h4 mb-3">Không thể xác nhận</h2>
+                            <p class="text-muted mb-4">@Model.Message</p>
+                            <a class="btn btn-outline-secondary" asp-page="/Auth/SignUp">Đăng ký lại</a>
+                            <a class="btn ms-2" asp-page="/Auth/SignIn" style="background-color:#d35400;color:#ffffff;border-color:#d35400;">Đăng nhập</a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

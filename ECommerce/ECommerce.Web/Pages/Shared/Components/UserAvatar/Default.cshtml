@@ -1,0 +1,24 @@
+@model ECommerce.Web.ViewModels.UserAvatarViewModel
+
+<div class="avatar-menu-wrapper" id="avatarMenuWrapper">
+    <button type="button" class="avatar-trigger d-flex align-items-center text-decoration-none" id="avatarTrigger" aria-label="Mở menu tài khoản">
+        <img src="@Model.AvatarUrl" alt="Ảnh đại diện" class="rounded-circle" style="width:38px;height:38px;object-fit:cover;border:2px solid rgba(255,255,255,0.25);" />
+    </button>
+
+    <div class="avatar-hover-info">
+        <div class="avatar-hover-name">@Model.FullName</div>
+        <div class="avatar-hover-email">@Model.Email</div>
+    </div>
+
+    <div class="avatar-popup" id="avatarPopup">
+        <button type="button" class="avatar-popup-close" id="avatarPopupClose" aria-label="Đóng cửa sổ">&times;</button>
+        <div class="avatar-popup-email">@Model.Email</div>
+        <div class="text-center mb-3">
+            <img src="@Model.AvatarUrl" alt="Ảnh đại diện" class="rounded-circle" style="width:58px;height:58px;object-fit:cover;border:2px solid #e5e7eb;" />
+        </div>
+        <div class="text-center fw-semibold mb-3">Xin chào, @Model.FullName</div>
+        <form method="post" asp-page="/Auth/Logout" class="w-100">
+            <button type="submit" class="btn btn-outline-danger w-100">Đăng xuất</button>
+        </form>
+    </div>
+</div>

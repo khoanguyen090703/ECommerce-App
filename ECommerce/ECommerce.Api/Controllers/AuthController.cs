@@ -1,9 +1,11 @@
 ﻿using ECommerce.Application.Common.Interfaces;
 using ECommerce.Application.Interfaces;
+using ECommerce.Infrastructure.Identity;
 using ECommerce.Infrastructure.Services;
 using ECommerce.SharedViewModels.DTOs.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ECommerce.Api.Controllers
 {
@@ -34,8 +36,7 @@ namespace ECommerce.Api.Controllers
         [HttpPost("signup")]
         public async Task<IActionResult> SignUp([FromBody] SignUpRequest request)
         {
-            var originUrl = $"{Request.Scheme}://{Request.Host.Value}";
-            var response = await _authService.SignUpAsync(request, originUrl);
+            var response = await _authService.SignUpAsync(request);
 
             if (!response.IsSuccess) 
                 return BadRequest(response);
@@ -93,6 +94,21 @@ namespace ECommerce.Api.Controllers
                 });
 
             var response = await _authService.LogoutAsync(userId);
+
+            if (!response.IsSuccess)
+                return BadRequest(response);
+
+            return Ok(response);
+        }
+
+        [HttpPost("resend-confirmation")]
+        [EnableRateLimiting("email-protection")]
+        public async Task<IActionResult> ResendConfirmation([FromBody] ResendEmailConfirmationRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email))
+                return BadRequest(new AuthResponse { IsSuccess = false, Message = "Email không được để trống." });
+
+            var response = await _authService.ResendEmailConfirmationAsync(request);
 
             if (!response.IsSuccess)
                 return BadRequest(response);

@@ -1,12 +1,34 @@
+using ECommerce.Web.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.IdleTimeout = TimeSpan.FromHours(1);
+});
 builder.Services.AddRazorPages();
-builder.Services.AddHttpClient();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IAuthSessionManager, AuthSessionManager>();
+builder.Services.AddTransient<ApiAuthenticationHandler>();
+builder.Services.AddHttpClient("ApiAnonymous", client =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5206";
+    client.BaseAddress = new Uri(apiBaseUrl.TrimEnd('/') + "/");
+});
+builder.Services.AddHttpClient(Options.DefaultName, client =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5206";
+    client.BaseAddress = new Uri(apiBaseUrl.TrimEnd('/') + "/");
+})
+    .AddHttpMessageHandler<ApiAuthenticationHandler>();
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -33,7 +55,8 @@ builder.Services
             {
                 context.Token = context.Request.Cookies["access_token"];
                 return Task.CompletedTask;
-            }
+            },
+            OnAuthenticationFailed = JwtCookieRefreshEvents.HandleAuthenticationFailedAsync
         };
     });
 builder.Services.AddAuthorization();
@@ -44,16 +67,14 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
 }
-
-app.UseHttpsRedirection();
 
 app.UseRouting();
 
+app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<ForceSignOutMiddleware>();
 
 app.MapStaticAssets();
 app.MapRazorPages()

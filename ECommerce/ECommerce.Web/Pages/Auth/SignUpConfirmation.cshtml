@@ -1,0 +1,110 @@
+﻿@page
+@model ECommerce.Web.Pages.Auth.SignUpConfirmationModel
+@{
+    ViewData["Title"] = "Xác nhận đăng ký";
+}
+
+<section class="py-5" style="background-color:#f8f9fa; min-height:70vh;">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-6">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-4 p-md-5 text-center">
+                        <div class="mb-3 text-success" style="font-size:2.5rem;" aria-hidden="true">✓</div>
+                        <h2 class="mb-3">Đăng ký thành công</h2>
+                        <p class="text-muted mb-2">
+                            Cảm ơn bạn đã tạo tài khoản tại <strong>Aura Mystique</strong>.
+                        </p>
+                        <p class="text-muted mb-4">
+                            Chúng tôi đã gửi email xác nhận tới <strong class="text-dark">@Model.Email</strong>.
+                            Vui lòng mở hộp thư và bấm vào liên kết để kích hoạt tài khoản trước khi đăng nhập.
+                        </p>
+
+                        @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+                        {
+                            <div class="alert @(Model.StatusIsError ? "alert-danger" : "alert-success") mb-4 text-start" role="status">
+                                @Model.StatusMessage
+                            </div>
+                        }
+
+                        <div id="confirmation-root"
+                             class="d-grid gap-2"
+                             data-email="@Model.Email"
+                             data-initial-cooldown="@(Model.NeedInitialCooldown ? "true" : "false")"
+                             data-restart-cooldown="@(Model.RestartResendCooldown ? "true" : "false")">
+                            <form method="post" asp-page-handler="Resend" class="d-grid" id="resend-form">
+                                <button type="submit" class="btn btn-outline-primary" id="resend-btn" disabled>
+                                    Gửi lại email xác nhận
+                                </button>
+                            </form>
+                            <p class="small text-muted mb-0" id="resend-hint" style="min-height:1.25rem;"></p>
+                            <a class="btn" asp-page="/Auth/SignIn" style="background-color:#d35400;color:#ffffff;border-color:#d35400;">
+                                Đã xác nhận email? Đăng nhập
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        (function () {
+            const root = document.getElementById("confirmation-root");
+            const btn = document.getElementById("resend-btn");
+            const hint = document.getElementById("resend-hint");
+            if (!root || !btn || !hint) return;
+
+            const email = root.dataset.email || "";
+            const storageKey = "emailResendUntil:" + email;
+            const cooldownMs = 60000;
+
+            function parseUntil() {
+                const v = sessionStorage.getItem(storageKey);
+                const n = parseInt(v, 10);
+                return Number.isFinite(n) ? n : 0;
+            }
+
+            function writeUntil(ts) {
+                sessionStorage.setItem(storageKey, String(ts));
+            }
+
+            let until = parseUntil();
+            const initialCooldown = root.dataset.initialCooldown === "true";
+            const restartCooldown = root.dataset.restartCooldown === "true";
+
+            if (initialCooldown || restartCooldown) {
+                until = Date.now() + cooldownMs;
+                writeUntil(until);
+            } else if (!until) {
+                until = 0;
+            }
+
+            let timerId = null;
+
+            function fmt(sec) {
+                const m = Math.floor(sec / 60);
+                const s = sec % 60;
+                return (m > 0 ? m + " phút " : "") + s + " giây";
+            }
+
+            function tick() {
+                const now = Date.now();
+                if (until <= now) {
+                    btn.disabled = false;
+                    hint.textContent = "";
+                    if (timerId) clearInterval(timerId);
+                    return;
+                }
+                btn.disabled = true;
+                const left = Math.ceil((until - now) / 1000);
+                hint.textContent = "Bạn có thể gửi lại sau " + fmt(left) + ".";
+            }
+
+            tick();
+            timerId = setInterval(tick, 1000);
+        })();
+    </script>
+}

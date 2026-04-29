@@ -2,7 +2,7 @@ namespace ECommerce.SharedViewModels.DTOs.Auth;
 
 public class AuthResponse {
     public bool IsSuccess { get; set; }
-    public string Message { get; set; }
+    public string Message { get; set; } = default!;
     public string? Token { get; set; }
     public string? RefreshToken { get; set; }
 }
