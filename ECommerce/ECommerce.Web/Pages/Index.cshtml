@@ -1,7 +1,7 @@
 @page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Trang chủ";
 }
 
 <section class="hero-section p-0 m-0 w-100 vh-100 position-relative">
@@ -9,27 +9,27 @@
         <div class="swiper-wrapper">
             
             <div class="swiper-slide position-relative w-100 h-100">
-                <img src="~/images/banner-1.jpg" class="w-100 h-100" style="object-fit: cover; object-position: center;" alt="Banner 1">
+                <img src="~/images/banner-1.jpg" class="w-100 h-100" style="object-fit: cover; object-position: center;" alt="Ảnh bìa 1">
                 <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.15);"></div>
             </div>
 
             <div class="swiper-slide position-relative w-100 h-100">
-                <img src="~/images/banner-2.jpg" class="w-100 h-100" style="object-fit: cover; object-position: center;" alt="Banner 2">
+                <img src="~/images/banner-2.jpg" class="w-100 h-100" style="object-fit: cover; object-position: center;" alt="Ảnh bìa 2">
                 <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.15);"></div>
             </div>
 
             <div class="swiper-slide position-relative w-100 h-100">
-                <img src="~/images/banner-3.jpg" class="w-100 h-100" style="object-fit: cover; object-position: center;" alt="Banner 3">
+                <img src="~/images/banner-3.jpg" class="w-100 h-100" style="object-fit: cover; object-position: center;" alt="Ảnh bìa 3">
                 <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.15);"></div>
             </div>
 
             <div class="swiper-slide position-relative w-100 h-100">
-                <img src="~/images/banner-4.jpg" class="w-100 h-100" style="object-fit: cover; object-position: center;" alt="Banner 4">
+                <img src="~/images/banner-4.jpg" class="w-100 h-100" style="object-fit: cover; object-position: center;" alt="Ảnh bìa 4">
                 <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.15);"></div>
             </div>
 
             <div class="swiper-slide position-relative w-100 h-100">
-                <img src="~/images/banner-5.jpg" class="w-100 h-100" style="object-fit: cover; object-position: center;" alt="Banner 5">
+                <img src="~/images/banner-5.jpg" class="w-100 h-100" style="object-fit: cover; object-position: center;" alt="Ảnh bìa 5">
                 <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.15);"></div>
             </div>
 
@@ -92,7 +92,7 @@
         <div class="row">
             <div class="col-12">
                 <div class="section-title">
-                    <h2>Featured Products</h2>
+                    <h2>Sản phẩm nổi bật</h2>
                 </div>
             </div>
         </div>
@@ -111,7 +111,7 @@
                                     <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? Url.Content("~/images/dior-sauvage-edp.jpg") : product.ImageUrl)" alt="@product.Name">
                                 </a>
                                 <div class="button">
-                                    <a href="#" class="btn btn-primary"><i class="lni lni-cart"></i>Add to Cart</a>
+                                    <a href="#" class="btn btn-primary"><i class="lni lni-cart"></i> Thêm vào giỏ</a>
                                 </div>
                             </div>
                             <div class="product-info">
@@ -132,7 +132,7 @@
             else
             {
                 <div class="col-12 text-center">
-                    <p>No featured products available at the moment.</p>
+                    <p>Hiện chưa có sản phẩm nổi bật.</p>
                 </div>
             }
         </div>

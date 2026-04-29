@@ -1,9 +1,7 @@
 ﻿using ECommerce.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Http;
-using System;
-using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 
 namespace ECommerce.Infrastructure.Services
 {
@@ -16,12 +14,13 @@ namespace ECommerce.Infrastructure.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
-        // Lấy UserId từ NameIdentifier Claim trong JWT
+        // JWT từ TokenService dùng claim "sub"; NameIdentifier có thể không được map.
         public Guid? UserId
         {
             get
             {
-                var id = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+                var id = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier)
+                    ?? _httpContextAccessor.HttpContext?.User?.FindFirstValue(JwtRegisteredClaimNames.Sub);
                 return string.IsNullOrEmpty(id) ? null : Guid.Parse(id);
             }
         }

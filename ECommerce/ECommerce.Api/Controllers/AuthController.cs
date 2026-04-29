@@ -1,11 +1,9 @@
-﻿using ECommerce.Application.Interfaces;
-using ECommerce.Infrastructure.Identity;
+﻿using ECommerce.Application.Common.Interfaces;
+using ECommerce.Application.Interfaces;
 using ECommerce.Infrastructure.Services;
 using ECommerce.SharedViewModels.DTOs.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 
 namespace ECommerce.Api.Controllers
 {
@@ -19,11 +17,18 @@ namespace ECommerce.Api.Controllers
 
         private readonly IAuthService _authService;
 
-        public AuthController(ILogger<AuthController> logger, IHttpContextAccessor contextAccessor, IAuthService authService)
+        private readonly ICurrentUserService _currentUserService;
+
+        public AuthController(
+            ILogger<AuthController> logger,
+            IHttpContextAccessor contextAccessor,
+            IAuthService authService,
+            ICurrentUserService currentUserService)
         {
             _logger = logger;
             _contextAccessor = contextAccessor;
             _authService = authService;
+            _currentUserService = currentUserService;
         }
 
         [HttpPost("signup")]
@@ -78,14 +83,13 @@ namespace ECommerce.Api.Controllers
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
-            // Lấy User Id từ Claims của Token hiện tại
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            var userId = _currentUserService.UserId?.ToString();
 
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(new AuthResponse 
                 { 
                     IsSuccess = false, 
-                    Message = "User can not be authorized." 
+                    Message = "Unable to resolve the current user from the token."
                 });
 
             var response = await _authService.LogoutAsync(userId);

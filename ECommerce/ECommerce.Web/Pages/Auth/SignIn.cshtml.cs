@@ -49,7 +49,7 @@ namespace ECommerce.Web.Pages.Auth
 
                 if (!response.IsSuccessStatusCode || authResponse?.IsSuccess != true)
                 {
-                    ModelState.AddModelError(string.Empty, authResponse?.Message ?? "Sign in failed. Please check your credentials.");
+                    ModelState.AddModelError(string.Empty, authResponse?.Message ?? "Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu.");
                     return Page();
                 }
 
@@ -80,7 +80,7 @@ namespace ECommerce.Web.Pages.Auth
             }
             catch
             {
-                ModelState.AddModelError(string.Empty, "Cannot connect to authentication server. Please try again later.");
+                ModelState.AddModelError(string.Empty, "Không kết nối được máy chủ xác thực. Vui lòng thử lại sau.");
                 return Page();
             }
         }
@@ -89,14 +89,14 @@ namespace ECommerce.Web.Pages.Auth
     public class SignInInputModel
     {
         [Display(Name = "Email")]
-        [Required(ErrorMessage = "Email is required.")]
-        [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
-        [StringLength(100, ErrorMessage = "Email must be at most {1} characters.")]
+        [Required(ErrorMessage = "Vui lòng nhập email.")]
+        [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
+        [StringLength(100, ErrorMessage = "Email tối đa {1} ký tự.")]
         public string Email { get; set; } = string.Empty;
 
-        [Display(Name = "Password")]
-        [Required(ErrorMessage = "Password is required.")]
-        [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be between {2} and {1} characters.")]
+        [Display(Name = "Mật khẩu")]
+        [Required(ErrorMessage = "Vui lòng nhập mật khẩu.")]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "Mật khẩu phải từ {2} đến {1} ký tự.")]
         public string Password { get; set; } = string.Empty;
     }
 }

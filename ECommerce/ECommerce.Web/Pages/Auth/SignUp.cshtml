@@ -1,7 +1,7 @@
 ﻿@page
 @model ECommerce.Web.Pages.Auth.SignUpModel
 @{
-    ViewData["Title"] = "Sign Up";
+    ViewData["Title"] = "Đăng ký";
 }
 
 <section class="py-5" style="background-color:#f8f9fa; min-height:70vh;">
@@ -10,21 +10,21 @@
             <div class="col-12 col-md-8 col-lg-6">
                 <div class="card shadow-sm border-0">
                     <div class="card-body p-4 p-md-5">
-                        <h2 class="mb-2 text-center">Create account</h2>
-                        <p class="text-muted text-center mb-4">Sign up to start shopping.</p>
+                        <h2 class="mb-2 text-center">Tạo tài khoản</h2>
+                        <p class="text-muted text-center mb-4">Đăng ký để bắt đầu mua sắm.</p>
 
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3"></div>
 
                         <form method="post" novalidate>
                             <div class="mb-3">
                                 <label asp-for="Input.FullName" class="form-label"></label>
-                                <input asp-for="Input.FullName" class="form-control" placeholder="Your full name" autocomplete="name" />
+                                <input asp-for="Input.FullName" class="form-control" placeholder="Họ và tên của bạn" autocomplete="name" />
                                 <span asp-validation-for="Input.FullName" class="text-danger"></span>
                             </div>
 
                             <div class="mb-3">
                                 <label asp-for="Input.Email" class="form-label"></label>
-                                <input asp-for="Input.Email" class="form-control" placeholder="you@example.com" autocomplete="email" />
+                                <input asp-for="Input.Email" class="form-control" placeholder="email@example.com" autocomplete="email" />
                                 <span asp-validation-for="Input.Email" class="text-danger"></span>
                             </div>
 
@@ -47,13 +47,13 @@
                             </div>
 
                             <button type="submit" class="btn w-100" style="background-color:#d35400;color:#ffffff;border-color:#d35400;">
-                                Sign Up
+                                Đăng ký
                             </button>
                         </form>
 
                         <div class="text-center mt-3">
-                            <span class="text-muted">Already have an account?</span>
-                            <a href="/Auth/SignIn" class="text-decoration-none ms-1">Sign In</a>
+                            <span class="text-muted">Đã có tài khoản?</span>
+                            <a href="/Auth/SignIn" class="text-decoration-none ms-1">Đăng nhập</a>
                         </div>
                     </div>
                 </div>

@@ -16,12 +16,12 @@
 }
 
 <!DOCTYPE html>
-<html class="no-js" lang="zxx">
+<html class="no-js" lang="vi">
 
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="x-ua-compatible" content="ie=edge" />
-    <title>Single Product - ShopGrids Bootstrap 5 eCommerce HTML Template.</title>
+    <title>@(details?.Name ?? "Chi tiết sản phẩm") - Aura Mystique</title>
     <meta name="description" content="" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -49,12 +49,12 @@
                             <div class="product-images">
                                 <main id="gallery">
                                     <div class="main-img">
-                                        <img src="@mainImage" id="current" alt="Product image">
+                                        <img src="@mainImage" id="current" alt="Hình sản phẩm">
                                     </div>
                                     <div class="images">
                                         @foreach (var imageUrl in galleryImages)
                                         {
-                                            <img src="@imageUrl" class="img" alt="Thumbnail">
+                                            <img src="@imageUrl" class="img" alt="Ảnh nhỏ">
                                         }
                                     </div>
                                 </main>
@@ -95,7 +95,7 @@
                                             <a asp-page="/ProductVariants/ProductDetails"
                                                asp-route-id="@variant.Id"
                                                class="variant-card @(isActive ? "variant-card-active" : "")">
-                                                <img src="@variantImage" alt="Variant @variant.Id">
+                                                <img src="@variantImage" alt="Phiên bản @variant.Id">
                                                 <span class="variant-meta">@variant.Format - @variant.Volumn</span>
                                             </a>
                                         </div>
@@ -105,7 +105,7 @@
                                     <div class="row align-items-end">
                                         <div class="col-lg-4 col-md-4 col-12">
                                             <div class="button cart-button">
-                                                <button class="btn" style="width: 100%;">Add to Cart</button>
+                                                <button class="btn" style="width: 100%;">Thêm vào giỏ</button>
                                             </div>
                                         </div>
                                     </div>

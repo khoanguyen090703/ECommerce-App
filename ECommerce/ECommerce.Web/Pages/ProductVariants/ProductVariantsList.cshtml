@@ -127,7 +127,7 @@
                     </select>
 
                     <!-- Price Filter -->
-                    <h5 class="filter-section-title">Khoảng giá ($)</h5>
+                    <h5 class="filter-section-title">Khoảng giá (VND)</h5>
                     <div class="row g-2 align-items-center mb-3">
                         <div class="col-5">
                             <input type="number" class="form-control form-control-sm" name="FromPrice" value="@Model.FromPrice" placeholder="Từ">
@@ -172,7 +172,7 @@
                     @if (Model.FromPrice.HasValue || Model.ToPrice.HasValue)
                     {
                         <span class="active-filter-badge">
-                            Giá: @(Model.FromPrice?.ToString("N0") ?? "0") - @(Model.ToPrice?.ToString("N0") ?? "Max")
+                            Giá: @(Model.FromPrice?.ToString("N0") ?? "0") - @(Model.ToPrice?.ToString("N0") ?? "tối đa")
                             <a href="javascript:void(0)" onclick="clearPriceFilter()">&times;</a>
                         </span>
                     }
@@ -207,7 +207,7 @@
                                         <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? Url.Content("~/images/dior-sauvage-edp.jpg") : product.ImageUrl)" alt="@product.Name">
                                     </a>
                                     <div class="button mt-3 text-center">
-                                        <a href="#" class="btn btn-primary btn-sm"><i class="lni lni-cart"></i> Add to Cart</a>
+                                        <a href="#" class="btn btn-primary btn-sm"><i class="lni lni-cart"></i> Thêm vào giỏ</a>
                                     </div>
                                 </div>
                                 <div class="product-info">
@@ -239,7 +239,7 @@
             <!-- Pagination -->
             @if (Model.VariantsData != null && Model.VariantsData.TotalPages > 1)
             {
-                <nav aria-label="Page navigation" class="mt-4">
+                <nav aria-label="Phân trang" class="mt-4">
                     <ul class="pagination justify-content-center">
                         <li class="page-item @(Model.PageNumber <= 1 ? "disabled" : "")">
                             <a class="page-link" href="javascript:void(0)" onclick="goToPage(@(Model.PageNumber - 1))" tabindex="-1">Trước</a>

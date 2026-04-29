@@ -1,7 +1,7 @@
 ﻿@page
 @model ECommerce.Web.Pages.Auth.SignInModel
 @{
-    ViewData["Title"] = "Sign In";
+    ViewData["Title"] = "Đăng nhập";
 }
 
 <section class="py-5" style="background-color:#f8f9fa; min-height:70vh;">
@@ -10,15 +10,15 @@
             <div class="col-12 col-md-8 col-lg-6">
                 <div class="card shadow-sm border-0">
                     <div class="card-body p-4 p-md-5">
-                        <h2 class="mb-2 text-center">Sign In</h2>
-                        <p class="text-muted text-center mb-4">Welcome back. Please sign in to continue.</p>
+                        <h2 class="mb-2 text-center">Đăng nhập</h2>
+                        <p class="text-muted text-center mb-4">Chào mừng bạn quay lại. Vui lòng đăng nhập để tiếp tục.</p>
 
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3"></div>
 
                         <form method="post" novalidate>
                             <div class="mb-3">
                                 <label asp-for="Input.Email" class="form-label"></label>
-                                <input asp-for="Input.Email" class="form-control" placeholder="you@example.com" autocomplete="email" />
+                                <input asp-for="Input.Email" class="form-control" placeholder="email@example.com" autocomplete="email" />
                                 <span asp-validation-for="Input.Email" class="text-danger"></span>
                             </div>
 
@@ -32,7 +32,7 @@
                             </div>
 
                             <button type="submit" class="btn w-100" style="background-color:#d35400;color:#ffffff;border-color:#d35400;">
-                                Sign In
+                                Đăng nhập
                             </button>
                         </form>
 
@@ -60,6 +60,49 @@
                 input.type = isPassword ? "text" : "password";
                 button.textContent = isPassword ? "Ẩn" : "Hiện";
             });
+        })();
+    </script>
+    <script>
+        (function () {
+            const params = new URLSearchParams(window.location.search);
+            const flag = params.get("signedOut");
+            if (!flag || flag.toLowerCase() !== "true") return;
+
+            const toast = document.createElement("div");
+            toast.setAttribute("role", "status");
+            toast.textContent = "Bạn đã đăng xuất thành công.";
+            toast.style.cssText = [
+                "position:fixed",
+                "top:1rem",
+                "right:1rem",
+                "z-index:1080",
+                "max-width:min(320px,calc(100vw - 2rem))",
+                "padding:0.65rem 1rem",
+                "font-size:0.9rem",
+                "line-height:1.4",
+                "color:#fff",
+                "background:#198754",
+                "border-radius:0.375rem",
+                "box-shadow:0 0.35rem 1rem rgba(0,0,0,0.18)",
+                "opacity:0",
+                "transform:translateX(0.5rem)",
+                "transition:opacity 0.25s ease,transform 0.25s ease"
+            ].join(";");
+
+            document.body.appendChild(toast);
+            requestAnimationFrame(function () {
+                toast.style.opacity = "1";
+                toast.style.transform = "translateX(0)";
+            });
+
+            const cleanUrl = window.location.pathname + window.location.hash;
+            window.history.replaceState({}, "", cleanUrl);
+
+            setTimeout(function () {
+                toast.style.opacity = "0";
+                toast.style.transform = "translateX(0.5rem)";
+                setTimeout(function () { toast.remove(); }, 280);
+            }, 4000);
         })();
     </script>
 }

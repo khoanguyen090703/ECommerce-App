@@ -50,7 +50,7 @@ namespace ECommerce.Web.Pages.Auth
 
                 if (!response.IsSuccessStatusCode || authResponse?.IsSuccess != true)
                 {
-                    ModelState.AddModelError(string.Empty, authResponse?.Message ?? "Sign up failed. Please try again.");
+                    ModelState.AddModelError(string.Empty, authResponse?.Message ?? "Đăng ký thất bại. Vui lòng thử lại.");
                     return Page();
                 }
 
@@ -59,7 +59,7 @@ namespace ECommerce.Web.Pages.Auth
             }
             catch
             {
-                ModelState.AddModelError(string.Empty, "Cannot connect to authentication server. Please try again later.");
+                ModelState.AddModelError(string.Empty, "Không kết nối được máy chủ xác thực. Vui lòng thử lại sau.");
                 return Page();
             }
         }
@@ -68,24 +68,24 @@ namespace ECommerce.Web.Pages.Auth
     public class SignUpInputModel
     {
         [Display(Name = "Email")]
-        [Required(ErrorMessage = "Email is required.")]
-        [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
-        [StringLength(100, ErrorMessage = "Email must be at most {1} characters.")]
+        [Required(ErrorMessage = "Vui lòng nhập email.")]
+        [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
+        [StringLength(100, ErrorMessage = "Email tối đa {1} ký tự.")]
         public string Email { get; set; } = string.Empty;
 
-        [Display(Name = "Password")]
-        [Required(ErrorMessage = "Password is required.")]
-        [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be between {2} and {1} characters.")]
+        [Display(Name = "Mật khẩu")]
+        [Required(ErrorMessage = "Vui lòng nhập mật khẩu.")]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "Mật khẩu phải từ {2} đến {1} ký tự.")]
         public string Password { get; set; } = string.Empty;
 
-        [Display(Name = "Confirm password")]
-        [Required(ErrorMessage = "Confirm password is required.")]
-        [Compare(nameof(Password), ErrorMessage = "Confirm password does not match password.")]
+        [Display(Name = "Xác nhận mật khẩu")]
+        [Required(ErrorMessage = "Vui lòng xác nhận mật khẩu.")]
+        [Compare(nameof(Password), ErrorMessage = "Mật khẩu xác nhận không khớp.")]
         public string ConfirmPassword { get; set; } = string.Empty;
 
-        [Display(Name = "Full name")]
-        [Required(ErrorMessage = "Full name is required.")]
-        [StringLength(100, MinimumLength = 2, ErrorMessage = "Full name must be between {2} and {1} characters.")]
+        [Display(Name = "Họ và tên")]
+        [Required(ErrorMessage = "Vui lòng nhập họ và tên.")]
+        [StringLength(100, MinimumLength = 2, ErrorMessage = "Họ và tên phải từ {2} đến {1} ký tự.")]
         public string FullName { get; set; } = string.Empty;
     }
 }

@@ -1,5 +1,7 @@
 ﻿using ECommerce.Application.Common.Interfaces;
 using ECommerce.Application.Interfaces;
+using ECommerce.Domain.Entities;
+using ECommerce.Domain.Interfaces;
 using ECommerce.SharedViewModels.DTOs.Auth;
 using Mapster;
 using Microsoft.AspNetCore.Http;
@@ -23,12 +25,20 @@ namespace ECommerce.Infrastructure.Identity
 
         private readonly IUnitOfWork _unitOfWork;
 
-        public AuthService(UserManager<AppUser> userManager, ITokenService tokenService, IEmailService emailService, IUnitOfWork unitOfWork)
+        private readonly ICustomerRepository _customerRepository;
+
+        public AuthService(
+            UserManager<AppUser> userManager,
+            ITokenService tokenService,
+            IEmailService emailService,
+            IUnitOfWork unitOfWork,
+            ICustomerRepository customerRepository)
         {
             _userManager = userManager;
             _tokenService = tokenService;
             _emailService = emailService;
             _unitOfWork = unitOfWork;
+            _customerRepository = customerRepository;
         }
 
         public async Task<AuthResponse> ConfirmEmailAsync(string userId, string token)
@@ -205,6 +215,14 @@ namespace ECommerce.Infrastructure.Identity
                         Message = "User is created successfully but assign role failed." 
                     };
                 }
+
+                var customer = new Customer
+                {
+                    Id = Guid.NewGuid(),
+                    FullName = request.FullName,
+                    IdentityId = user.Id
+                };
+                await _customerRepository.AddAsync(customer);
 
                 await _unitOfWork.CommitTransactionAsync();
             }

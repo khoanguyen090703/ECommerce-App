@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-    <title>FoodMart - Free eCommerce Grocery Store HTML Website Template</title>
+    <title>Aura Mystique - Nước hoa cao cấp</title>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -169,63 +169,63 @@
     @if (User?.Identity?.IsAuthenticated == true)
     {
         @* Shopping Cart *@
-        <div class="offcanvas offcanvas-end" data-bs-scroll="true" tabindex="-1" id="offcanvasCart" aria-labelledby="My Cart">
+        <div class="offcanvas offcanvas-end" data-bs-scroll="true" tabindex="-1" id="offcanvasCart" aria-labelledby="cartTitle">
             <div class="offcanvas-header justify-content-center">
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Đóng"></button>
             </div>
             <div class="offcanvas-body">
                 <div class="order-md-last">
-                    <h4 class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="text-primary">Your cart</span>
+                    <h4 class="d-flex justify-content-between align-items-center mb-3" id="cartTitle">
+                        <span class="text-primary">Giỏ hàng của bạn</span>
                         <span class="badge bg-primary rounded-pill">3</span>
                     </h4>
                     <ul class="list-group mb-3">
                         <li class="list-group-item d-flex justify-content-between lh-sm">
                             <div>
-                                <h6 class="my-0">Growers cider</h6>
-                                <small class="text-body-secondary">Brief description</small>
+                                <h6 class="my-0">Sản phẩm mẫu 1</h6>
+                                <small class="text-body-secondary">Mô tả ngắn</small>
                             </div>
-                            <span class="text-body-secondary">$12</span>
+                            <span class="text-body-secondary">120.000 ₫</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between lh-sm">
                             <div>
-                                <h6 class="my-0">Fresh grapes</h6>
-                                <small class="text-body-secondary">Brief description</small>
+                                <h6 class="my-0">Sản phẩm mẫu 2</h6>
+                                <small class="text-body-secondary">Mô tả ngắn</small>
                             </div>
-                            <span class="text-body-secondary">$8</span>
+                            <span class="text-body-secondary">80.000 ₫</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between lh-sm">
                             <div>
-                                <h6 class="my-0">Heinz tomato ketchup</h6>
-                                <small class="text-body-secondary">Brief description</small>
+                                <h6 class="my-0">Sản phẩm mẫu 3</h6>
+                                <small class="text-body-secondary">Mô tả ngắn</small>
                             </div>
-                            <span class="text-body-secondary">$5</span>
+                            <span class="text-body-secondary">50.000 ₫</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between">
-                            <span>Total (USD)</span>
-                            <strong>$20</strong>
+                            <span>Tạm tính</span>
+                            <strong>250.000 ₫</strong>
                         </li>
                     </ul>
 
-                    <button class="w-100 btn btn-primary btn-lg" type="submit">Continue to checkout</button>
+                    <button class="w-100 btn btn-primary btn-lg" type="submit">Tiến hành thanh toán</button>
                 </div>
             </div>
         </div>
     }
 
     @* Search bar *@
-    <div class="offcanvas offcanvas-end" data-bs-scroll="true" tabindex="-1" id="offcanvasSearch" aria-labelledby="Search">
+    <div class="offcanvas offcanvas-end" data-bs-scroll="true" tabindex="-1" id="offcanvasSearch" aria-labelledby="searchPanelTitle">
         <div class="offcanvas-header justify-content-center">
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Đóng"></button>
         </div>
         <div class="offcanvas-body">
             <div class="order-md-last">
-                <h4 class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="text-primary">Search</span>
+                <h4 class="d-flex justify-content-between align-items-center mb-3" id="searchPanelTitle">
+                    <span class="text-primary">Tìm kiếm</span>
                 </h4>
                 <form role="search" action="index.html" method="get" class="d-flex mt-3 gap-0">
-                    <input class="form-control rounded-start rounded-0 bg-light" type="email" placeholder="What are you looking for?" aria-label="What are you looking for?">
-                    <button class="btn btn-dark rounded-end rounded-0" type="submit">Search</button>
+                    <input class="form-control rounded-start rounded-0 bg-light" type="search" placeholder="Bạn đang tìm gì?" aria-label="Ô tìm kiếm">
+                    <button class="btn btn-dark rounded-end rounded-0" type="submit">Tìm</button>
                 </form>
             </div>
         </div>
@@ -238,15 +238,15 @@
                 <!-- Logo -->
                 <div class="header-logo d-flex align-items-center">
                     <a class="d-flex align-items-center text-decoration-none" href="@Url.Content("~/")">
-                        <img src="@Url.Content("~/images/logo.png")" alt="logo" style="height:144px;" />
+                        <img src="@Url.Content("~/images/logo.png")" alt="Logo Aura Mystique" style="height:144px;" />
                     </a>
                 </div>
 
                 <!-- Search -->
                 <div class="flex-grow-1 px-3">
                     <form class="d-flex" method="get" action="/Search">
-                        <input name="q" class="form-control rounded-start rounded-0" type="search" placeholder="Search products, brands..." aria-label="Search">
-                        <button class="btn rounded-end rounded-0 ms-1" type="submit" style="background-color:#d35400;color:#ffffff;border-color:#d35400;">Search</button>
+                        <input name="q" class="form-control rounded-start rounded-0" type="search" placeholder="Tìm sản phẩm, thương hiệu..." aria-label="Tìm kiếm">
+                        <button class="btn rounded-end rounded-0 ms-1" type="submit" style="background-color:#d35400;color:#ffffff;border-color:#d35400;">Tìm</button>
                     </form>
                 </div>
 
@@ -255,10 +255,10 @@
                     @{
                         var cartCount = (ViewBag.CartItemCount as int?) ?? 0;
                         var isAuthenticated = User?.Identity?.IsAuthenticated == true;
-                        var hardcodedFullName = "Nguyen Van A";
+                        var hardcodedFullName = "Nguyễn Văn A";
                         var hardcodedEmail = "nguyenvana@example.com";
                         var userName = isAuthenticated
-                            ? (User?.Identity?.Name ?? User?.FindFirst("email")?.Value ?? "User")
+                            ? (User?.Identity?.Name ?? User?.FindFirst("email")?.Value ?? "Người dùng")
                             : null;
                         var defaultAvatarUrl = Url.Content("~/images/avatar.webp");
                         var avatarUrl = string.IsNullOrWhiteSpace(User?.FindFirst("picture")?.Value)
@@ -270,8 +270,8 @@
                         @if (isAuthenticated)
                         {
                             <div class="avatar-menu-wrapper" id="avatarMenuWrapper">
-                                <button type="button" class="avatar-trigger d-flex align-items-center text-decoration-none" id="avatarTrigger" aria-label="Open profile menu">
-                                    <img src="@avatarUrl" alt="avatar" class="rounded-circle" style="width:38px;height:38px;object-fit:cover;border:2px solid rgba(255,255,255,0.25);" />
+                                <button type="button" class="avatar-trigger d-flex align-items-center text-decoration-none" id="avatarTrigger" aria-label="Mở menu tài khoản">
+                                    <img src="@avatarUrl" alt="Ảnh đại diện" class="rounded-circle" style="width:38px;height:38px;object-fit:cover;border:2px solid rgba(255,255,255,0.25);" />
                                 </button>
 
                                 <div class="avatar-hover-info">
@@ -280,19 +280,21 @@
                                 </div>
 
                                 <div class="avatar-popup" id="avatarPopup">
-                                    <button type="button" class="avatar-popup-close" id="avatarPopupClose" aria-label="Close popup">&times;</button>
+                                    <button type="button" class="avatar-popup-close" id="avatarPopupClose" aria-label="Đóng cửa sổ">&times;</button>
                                     <div class="avatar-popup-email">@hardcodedEmail</div>
                                     <div class="text-center mb-3">
-                                        <img src="@avatarUrl" alt="avatar popup" class="rounded-circle" style="width:58px;height:58px;object-fit:cover;border:2px solid #e5e7eb;" />
+                                        <img src="@avatarUrl" alt="Ảnh đại diện" class="rounded-circle" style="width:58px;height:58px;object-fit:cover;border:2px solid #e5e7eb;" />
                                     </div>
-                                    <div class="text-center fw-semibold mb-3">Hello @hardcodedFullName</div>
-                                    <button type="button" class="btn btn-outline-danger w-100">Sign out</button>
+                                    <div class="text-center fw-semibold mb-3">Xin chào, @hardcodedFullName</div>
+                                    <form method="post" asp-page="/Auth/Logout" class="w-100">
+                                        <button type="submit" class="btn btn-outline-danger w-100">Đăng xuất</button>
+                                    </form>
                                 </div>
                             </div>
                         }
                         else
                         {
-                            <a class="btn" href="/Auth/SignIn" style="background-color:#d35400;color:#ffffff;border-color:#d35400;">Sign In</a>
+                            <a class="btn" href="/Auth/SignIn" style="background-color:#d35400;color:#ffffff;border-color:#d35400;">Đăng nhập</a>
                         }
                     </div>
 
@@ -311,10 +313,10 @@
             <nav class="navbar navbar-expand py-0 mt-3 border-top" style="border-color: rgba(255,255,255,0.12) !important;">
                 <ul class="navbar-nav gap-3 pt-3">
                     <li class="nav-item">
-                        <a class="nav-link text-white px-0" asp-page="/Index">Home</a>
+                        <a class="nav-link text-white px-0" asp-page="/Index">Trang chủ</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-white px-0" asp-page="/ProductVariants/ProductVariantsList">Shop</a>
+                        <a class="nav-link text-white px-0" asp-page="/ProductVariants/ProductVariantsList">Cửa hàng</a>
                     </li>
                 </ul>
             </nav>
@@ -330,7 +332,7 @@
             <div class="row">
             
                 <div class="col-md-4 mb-4">
-                    <h5 class="mb-3" style="color: var(--dark-color); font-family: var(--heading-font);">AURA MYSTIQUE</h5>
+                    <h5 class="mb-3" style="color: var(--dark-color); font-family: var(--heading-font);">Aura Mystique</h5>
                     <p style="color: var(--bs-body-color); line-height: var(--bs-body-line-height);">
                         Đánh thức mọi giác quan với những hương thơm mang vẻ đẹp sang trọng và huyền bí.
                     </p>
@@ -365,7 +367,7 @@
             <div class="row mt-4 pt-4" style="border-top: 1px solid var(--grey-color);">
                 <div class="col-12 text-center">
                     <p class="mb-0" style="color: var(--light-dark-color); font-size: 0.9rem;">
-                        &copy; 2026 Aura Mystique. All rights reserved.
+                        &copy; 2026 Aura Mystique. Mọi quyền được bảo lưu.
                     </p>
                 </div>
             </div>
