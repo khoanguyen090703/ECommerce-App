@@ -22,6 +22,8 @@ namespace ECommerce.Infrastructure
 {
     public static class DependencyInjection
     {
+        public const string CorsPolicyName = "DefaultCorsPolicy";
+
         public static IServiceCollection AddInfrastructure(
             this IServiceCollection services,
             IConfiguration configuration)
@@ -77,6 +79,30 @@ namespace ECommerce.Infrastructure
             //    googleOptions.ClientSecret = configuration["Authentication:Google:ClientSecret"]!;
             //})
             ;
+
+            // 4. Cấu hình CORS
+            var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+            services.AddCors(options =>
+            {
+                options.AddPolicy(CorsPolicyName, policy =>
+                {
+                    if (allowedOrigins.Length > 0)
+                    {
+                        policy.WithOrigins(allowedOrigins)
+                            .AllowAnyHeader()
+                            .AllowAnyMethod()
+                            .AllowCredentials();
+                    }
+                    else
+                    {
+                        // Fallback cho local/dev khi chưa cấu hình origin cụ thể
+                        policy.WithOrigins("http://localhost:5284", "https://localhost:7284")
+                            .AllowAnyHeader()
+                            .AllowAnyMethod()
+                            .AllowCredentials();
+                    }
+                });
+            });
 
             // Đăng ký HttpContextAccessor - Thư viện dùng để truy cập HttpContext từ Service
             services.AddHttpContextAccessor();

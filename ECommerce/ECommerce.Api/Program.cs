@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi;
 using System.Text.Json.Serialization;
+using InfrastructureDependencyInjection = ECommerce.Infrastructure.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -79,6 +80,7 @@ app.UseRateLimiter();
 app.UseExceptionHandler();
 
 app.UseRouting();
+app.UseCors(InfrastructureDependencyInjection.CorsPolicyName);
 
 app.UseAuthentication();
 app.UseAuthorization();
