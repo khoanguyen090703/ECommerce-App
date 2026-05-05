@@ -16,13 +16,13 @@ namespace ECommerce.Api.Filters
 
             if (!hasAuthorize) return;
 
-            operation.Security = new List<OpenApiSecurityRequirement>
-            {
+            operation.Security =
+            [
                 new OpenApiSecurityRequirement
                 {
-                    [new OpenApiSecuritySchemeReference("Bearer")] = new List<string>()
+                    [new OpenApiSecuritySchemeReference("Bearer", context.Document)] = []
                 }
-            };
+            ];
         }
     }
 }

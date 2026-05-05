@@ -1,7 +1,8 @@
-﻿using ECommerce.Domain.Entities;
-using System;
+﻿using ECommerce.Domain.Common;
+using ECommerce.Domain.Entities;
+using ECommerce.Domain.QueryParameters;
 using System.Collections.Generic;
-using System.Text;
+using System.Threading.Tasks;
 
 namespace ECommerce.Domain.Interfaces
 {
@@ -10,6 +11,8 @@ namespace ECommerce.Domain.Interfaces
         Task<Category?> GetById(int id);
 
         Task<List<Category>> GetAllAsync();
+
+        Task<PagedResult<Category>> GetAsync(CategoryQueryParams parameters);
 
         Task AddAsync(Category category);
 
@@ -24,3 +27,4 @@ namespace ECommerce.Domain.Interfaces
         Task<bool> HasProductsAsync(int id);
     }
 }
+

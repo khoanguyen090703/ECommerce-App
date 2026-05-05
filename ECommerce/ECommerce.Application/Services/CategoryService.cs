@@ -2,12 +2,14 @@ using ECommerce.SharedViewModels.DTOs.Request;
 using ECommerce.SharedViewModels.DTOs.Response;
 using ECommerce.Application.Exceptions;
 using ECommerce.Application.Interfaces;
+using ECommerce.Domain.Common;
 using ECommerce.Domain.Entities;
 using ECommerce.Domain.Interfaces;
+using ECommerce.Domain.QueryParameters;
 using FluentValidation;
-using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace ECommerce.Application.Services
 {
@@ -37,7 +39,8 @@ namespace ECommerce.Application.Services
             var category = new Category
             {
                 Name = request.Name,
-                Description = request.Description
+                Description = request.Description,
+                ImageUrl = string.IsNullOrWhiteSpace(request.ImageUrl) ? null : request.ImageUrl.Trim()
             };
 
             await _categoryRepository.AddAsync(category);
@@ -63,9 +66,43 @@ namespace ECommerce.Application.Services
                 Id = c.Id,
                 Name = c.Name,
                 Description = c.Description,
-                ImageUrl = c.ImageUrl
+                ImageUrl = c.ImageUrl,
+                CreatedDate = c.CreatedDate,
+                UpdatedDate = c.UpdatedDate
             }).ToList();
             return categorieResponses;
+        }
+
+        public async Task<PagedResult<CategoryResponse>> GetCategoriesAsync(CategoryQueryParams parameters)
+        {
+            var paged = await _categoryRepository.GetAsync(parameters);
+            var mapped = paged.Items.Select(c => new CategoryResponse
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Description = c.Description,
+                ImageUrl = c.ImageUrl,
+                CreatedDate = c.CreatedDate,
+                UpdatedDate = c.UpdatedDate
+            }).ToList();
+            return new PagedResult<CategoryResponse>(mapped, paged.TotalCount, paged.PageNumber, paged.PageSize);
+        }
+
+        public async Task<CategoryResponse> GetCategoryByIdAsync(int id)
+        {
+            var category = await _categoryRepository.GetById(id);
+            if (category == null)
+                throw new NotFoundException($"Category with id {id} not found.");
+
+            return new CategoryResponse
+            {
+                Id = category.Id,
+                Name = category.Name,
+                Description = category.Description,
+                ImageUrl = category.ImageUrl,
+                CreatedDate = category.CreatedDate,
+                UpdatedDate = category.UpdatedDate
+            };
         }
 
         public async Task UpdateCategoryByIdAsync(int id, UpdateCategoryRequest request)
@@ -84,6 +121,7 @@ namespace ECommerce.Application.Services
                 category.Name = request.Name;
             }
             category.Description = request.Description;
+            category.ImageUrl = string.IsNullOrWhiteSpace(request.ImageUrl) ? null : request.ImageUrl.Trim();
             await _categoryRepository.UpdateAsync(category);
         }
     }

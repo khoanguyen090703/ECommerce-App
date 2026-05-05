@@ -18,6 +18,8 @@ namespace ECommerce.Api.ErrorHandlers
                 NotFoundException => StatusCodes.Status404NotFound,
                 ConflictException => StatusCodes.Status409Conflict,
                 UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+                ArgumentException => StatusCodes.Status400BadRequest,
+                InvalidOperationException => StatusCodes.Status502BadGateway,
                 _ => StatusCodes.Status500InternalServerError
             };
 

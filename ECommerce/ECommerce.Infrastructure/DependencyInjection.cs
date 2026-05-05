@@ -104,6 +104,11 @@ namespace ECommerce.Infrastructure
                 });
             });
 
+            // Cloudinary
+            services.Configure<CloudinarySettings>(
+                configuration.GetSection(CloudinarySettings.SectionName));
+            services.AddScoped<IImageStorageService, CloudinaryImageStorageService>();
+
             // Đăng ký HttpContextAccessor - Thư viện dùng để truy cập HttpContext từ Service
             services.AddHttpContextAccessor();
             services.AddScoped<ICurrentUserService, CurrentUserService>();

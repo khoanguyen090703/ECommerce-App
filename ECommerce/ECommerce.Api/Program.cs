@@ -22,24 +22,28 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(namingPolicy: null, allowIntegerValues: true));
     });
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+
+// JWT Bearer for Swagger UI (Swashbuckle 10 / Microsoft.OpenApi 2.x, OpenAPI 3.1)
+const string swaggerJwtSchemeId = "Bearer";
+
 builder.Services.AddSwaggerGen(options =>
 {
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    options.AddSecurityDefinition(swaggerJwtSchemeId, new OpenApiSecurityScheme
     {
-        Name = "Authorization",
         Type = SecuritySchemeType.Http,
         Scheme = "bearer",
         BearerFormat = "JWT",
-        In = ParameterLocation.Header
+        Description = "JWT Bearer. Paste the raw token only (Swagger sends it as Authorization: Bearer <token>)."
     });
 
     options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
     {
-        [new OpenApiSecuritySchemeReference("Bearer", document)] = new List<string>()
+        [new OpenApiSecuritySchemeReference(swaggerJwtSchemeId, document)] = []
     });
 
     options.OperationFilter<SecurityRequirementsOperationFilter>();
 });
+
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
@@ -60,14 +64,28 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
+// Allow large file uploads (default is 30 MB; adjust as needed)
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(o =>
+{
+    o.MultipartBodyLengthLimit = 10 * 1024 * 1024; // 10 MB
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     await app.Services.InitialiseDatabaseAsync();
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwagger(options =>
+    {
+        options.OpenApiVersion = OpenApiSpecVersion.OpenApi3_1;
+    });
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "ECommerce API v1");
+        options.EnablePersistAuthorization();
+        options.EnableValidator(null);
+    });
 }
 
 app.UseForwardedHeaders(new ForwardedHeadersOptions

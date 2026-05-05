@@ -19,6 +19,7 @@ namespace ECommerce.Application
             services.AddScoped<IBrandService, BrandService>();
             services.AddScoped<IVariantService, VariantService>();
             services.AddScoped<IScentFamilyService, ScentFamilyService>();
+            services.AddScoped<IImageService, ImageService>();
 
             // Register validators
             services.AddTransient<FluentValidation.IValidator<UpdateVariantRequest>, UpdateVariantRequestValidator>();

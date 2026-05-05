@@ -9,5 +9,7 @@ namespace ECommerce.SharedViewModels.DTOs.Request
         public string Name { get; set; } = default!;
 
         public string Description { get; set; } = default!;
+
+        public string? ImageUrl { get; set; }
     }
 }

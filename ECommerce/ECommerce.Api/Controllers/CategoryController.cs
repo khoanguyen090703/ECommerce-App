@@ -1,7 +1,6 @@
-using Azure.Core;
-using ECommerce.SharedViewModels.DTOs.Request;
 using ECommerce.Application.Interfaces;
-using Microsoft.AspNetCore.Authorization;
+using ECommerce.Domain.QueryParameters;
+using ECommerce.SharedViewModels.DTOs.Request;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ECommerce.Api.Controllers
@@ -25,6 +24,20 @@ namespace ECommerce.Api.Controllers
         {
             var categories = await _categoryService.GetAllAsync();
             return Ok(categories);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Get([FromQuery] CategoryQueryParams parameters)
+        {
+            var paged = await _categoryService.GetCategoriesAsync(parameters);
+            return Ok(paged);
+        }
+
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var category = await _categoryService.GetCategoryByIdAsync(id);
+            return Ok(category);
         }
 
         [HttpPost]

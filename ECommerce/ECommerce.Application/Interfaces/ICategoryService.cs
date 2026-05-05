@@ -1,8 +1,9 @@
-﻿using ECommerce.SharedViewModels.DTOs.Request;
+﻿using ECommerce.Domain.Common;
+using ECommerce.Domain.QueryParameters;
+using ECommerce.SharedViewModels.DTOs.Request;
 using ECommerce.SharedViewModels.DTOs.Response;
-using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Threading.Tasks;
 
 namespace ECommerce.Application.Interfaces
 {
@@ -11,6 +12,10 @@ namespace ECommerce.Application.Interfaces
         Task CreateProductAsync(CreateCategoryRequest request);
 
         Task<List<CategoryResponse>> GetAllAsync();
+
+        Task<PagedResult<CategoryResponse>> GetCategoriesAsync(CategoryQueryParams parameters);
+
+        Task<CategoryResponse> GetCategoryByIdAsync(int id);
 
         Task UpdateCategoryByIdAsync(int id, UpdateCategoryRequest request);
 
