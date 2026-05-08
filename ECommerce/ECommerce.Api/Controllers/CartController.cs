@@ -1,11 +1,14 @@
 ﻿using ECommerce.Application.Interfaces;
 using ECommerce.SharedViewModels.DTOs.Request;
+using ECommerce.SharedViewModels.DTOs.Response;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ECommerce.Api.Controllers
 {
     [ApiController]
     [Route("api/cart")]
+    [Authorize]
     public class CartController : Controller
     {
         private readonly ILogger<CartController> _logger;
@@ -23,6 +26,16 @@ namespace ECommerce.Api.Controllers
         {
             var response = await _cartService.GetCartByCurrentCustomerOrCreateCartAsync();
             return Ok(response);
+        }
+
+        /// <summary>
+        /// Returns the current user's cart line-item count. Authenticate with Bearer access token only (no body).
+        /// </summary>
+        [HttpGet("item-count")]
+        public async Task<ActionResult<CartItemCountResponse>> GetItemCount()
+        {
+            var count = await _cartService.GetCartItemCountForCurrentCustomerAsync();
+            return Ok(new CartItemCountResponse { TotalItems = count });
         }
 
         [HttpPost("items")]

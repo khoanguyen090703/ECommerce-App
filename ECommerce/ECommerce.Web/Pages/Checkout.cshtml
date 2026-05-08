@@ -1,0 +1,609 @@
+@page "/checkout"
+@model ECommerce.Web.Pages.CheckoutModel
+@{
+    ViewData["Title"] = "Thanh toán";
+}
+
+<div class="container py-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-4">
+        <div>
+            <h1 class="h3 mb-1">Thanh toán</h1>
+            <div class="text-muted">Hoàn tất thông tin giao hàng và xác nhận đơn hàng.</div>
+        </div>
+        <a class="btn btn-outline-secondary" asp-page="/ProductVariants/ProductVariantsList">Tiếp tục mua sắm</a>
+    </div>
+
+    <div id="checkoutLoading" class="text-center text-muted py-5">
+        <span class="spinner-border me-2" role="status" aria-hidden="true"></span>
+        Đang tải thông tin thanh toán…
+    </div>
+
+    <div id="checkoutError" class="alert alert-warning d-none" role="alert"></div>
+
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1080;">
+        <div id="checkoutToast" class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div id="checkoutToastMessage" class="toast-body">Có lỗi xảy ra.</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="checkoutContent" class="row g-4 d-none">
+        <!-- Left: Customer & Order Form -->
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <h2 class="h5 mb-3">Thông tin giao hàng</h2>
+
+                    <form id="checkoutForm" novalidate>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input id="email" class="form-control" type="email" readonly />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Tên người nhận <span class="text-danger">*</span></label>
+                            <input id="recipientName" class="form-control" type="text" autocomplete="name" />
+                            <div class="invalid-feedback" id="errRecipientName"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+                            <input id="phoneNumber" class="form-control" type="tel" autocomplete="tel" placeholder="VD: 0901234567" />
+                            <div class="invalid-feedback" id="errPhoneNumber"></div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Tỉnh/Thành phố <span class="text-danger">*</span></label>
+                                <select id="province" class="form-select">
+                                    <option value="">Chọn tỉnh/thành</option>
+                                </select>
+                                <div class="invalid-feedback" id="errProvince"></div>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Quận/Huyện <span class="text-danger">*</span></label>
+                                <select id="district" class="form-select" disabled>
+                                    <option value="">Chọn quận/huyện</option>
+                                </select>
+                                <div class="invalid-feedback" id="errDistrict"></div>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Phường/Xã <span class="text-danger">*</span></label>
+                                <select id="ward" class="form-select" disabled>
+                                    <option value="">Chọn phường/xã</option>
+                                </select>
+                                <div class="invalid-feedback" id="errWard"></div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 mb-3">
+                            <label class="form-label">Số nhà, tên đường <span class="text-danger">*</span></label>
+                            <input id="street" class="form-control" type="text" autocomplete="street-address" placeholder="VD: 12 Nguyễn Huệ" />
+                            <div class="invalid-feedback" id="errStreet"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Phương thức thanh toán <span class="text-danger">*</span></label>
+                            <div id="paymentMethods" class="d-grid gap-2"></div>
+                            <div class="invalid-feedback d-block" id="errPaymentMethod" style="display:none"></div>
+                        </div>
+
+                        <button id="placeOrderBtn" type="submit" class="btn btn-primary w-100">
+                            Đặt hàng
+                        </button>
+
+                        <div id="placeOrderLoading" class="text-muted small mt-2 d-none">
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            Đang tạo đơn hàng…
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Order Summary -->
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <h2 class="h5 mb-3">Tóm tắt đơn hàng</h2>
+
+                    <div id="orderItems" class="vstack gap-3"></div>
+
+                    <hr class="my-4" />
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Tạm tính</span>
+                        <strong id="subtotal">0 ₫</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Phí vận chuyển</span>
+                        <strong>Miễn phí</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Tổng cộng</span>
+                        <strong class="text-primary" id="total">0 ₫</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const els = {
+            loading: document.getElementById('checkoutLoading'),
+            error: document.getElementById('checkoutError'),
+            content: document.getElementById('checkoutContent'),
+            form: document.getElementById('checkoutForm'),
+            email: document.getElementById('email'),
+            recipientName: document.getElementById('recipientName'),
+            phoneNumber: document.getElementById('phoneNumber'),
+            province: document.getElementById('province'),
+            district: document.getElementById('district'),
+            ward: document.getElementById('ward'),
+            street: document.getElementById('street'),
+            paymentMethods: document.getElementById('paymentMethods'),
+            orderItems: document.getElementById('orderItems'),
+            subtotal: document.getElementById('subtotal'),
+            total: document.getElementById('total'),
+            placeOrderBtn: document.getElementById('placeOrderBtn'),
+            placeOrderLoading: document.getElementById('placeOrderLoading'),
+            errRecipientName: document.getElementById('errRecipientName'),
+            errPhoneNumber: document.getElementById('errPhoneNumber'),
+            errProvince: document.getElementById('errProvince'),
+            errDistrict: document.getElementById('errDistrict'),
+            errWard: document.getElementById('errWard'),
+            errStreet: document.getElementById('errStreet'),
+            errPaymentMethod: document.getElementById('errPaymentMethod'),
+        };
+
+        const state = {
+            checkout: null,
+            provinces: [],
+            districts: [],
+            wards: [],
+            selectedProvince: null,
+            selectedDistrict: null,
+            selectedWard: null,
+        };
+
+        function formatVnd(value) {
+            const n = Number(value) || 0;
+            try { return new Intl.NumberFormat('vi-VN').format(n) + ' ₫'; } catch { return n + ' ₫'; }
+        }
+
+        function show(el, yes) {
+            if (!el) return;
+            el.classList.toggle('d-none', !yes);
+        }
+
+        function setError(message) {
+            if (!els.error) return;
+            els.error.textContent = message || 'Có lỗi xảy ra. Vui lòng thử lại.';
+            show(els.error, true);
+        }
+
+        function showToast(message) {
+            const toastEl = document.getElementById('checkoutToast');
+            const msgEl = document.getElementById('checkoutToastMessage');
+            if (!toastEl || !msgEl || !window.bootstrap?.Toast) return;
+            msgEl.textContent = message || 'Có lỗi xảy ra. Vui lòng thử lại.';
+            const toast = window.bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 4500 });
+            toast.show();
+        }
+
+        async function fetchJson(url, options) {
+            const res = await fetch(url, Object.assign({
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json' }
+            }, options || {}));
+
+            const text = await res.text();
+            let data = null;
+            if (text) { try { data = JSON.parse(text); } catch { data = null; } }
+
+            if (!res.ok) {
+                const err = new Error('HTTP ' + res.status);
+                err.status = res.status;
+                err.data = data;
+                throw err;
+            }
+
+            return data;
+        }
+
+        function clearFieldError(inputEl, errEl) {
+            if (inputEl) inputEl.classList.remove('is-invalid');
+            if (errEl) errEl.textContent = '';
+        }
+
+        function setFieldError(inputEl, errEl, msg) {
+            if (inputEl) inputEl.classList.add('is-invalid');
+            if (errEl) errEl.textContent = msg;
+        }
+
+        function setPaymentError(msg) {
+            if (!els.errPaymentMethod) return;
+            els.errPaymentMethod.textContent = msg || '';
+            els.errPaymentMethod.style.display = msg ? 'block' : 'none';
+        }
+
+        function normalizeCheckout(raw) {
+            const cartItems = raw?.cartItems ?? raw?.CartItems ?? [];
+            const paymentMethods = raw?.paymentMethods ?? raw?.PaymentMethods ?? [];
+            const email = raw?.email ?? raw?.Email ?? '';
+            const sub = raw?.subTotal ?? raw?.SubTotal ?? 0;
+            return { email, cartItems, paymentMethods, subTotal: sub };
+        }
+
+        function renderItems(items) {
+            if (!els.orderItems) return;
+            els.orderItems.innerHTML = '';
+
+            items.forEach((it) => {
+                const id = it.id ?? it.Id;
+                const name = it.productName ?? it.ProductName ?? '';
+                const qty = Number(it.quantity ?? it.Quantity ?? 0) || 0;
+                const unit = Number(it.unitPrice ?? it.UnitPrice ?? 0) || 0;
+                const img = it.imageUrl ?? it.ImageUrl ?? '';
+
+                const row = document.createElement('div');
+                row.className = 'd-flex gap-3 align-items-center';
+                row.dataset.itemId = String(id ?? '');
+
+                const thumb = document.createElement('div');
+                thumb.className = 'flex-shrink-0';
+                if (img) {
+                    const im = document.createElement('img');
+                    im.src = img;
+                    im.alt = '';
+                    im.width = 56;
+                    im.height = 56;
+                    im.loading = 'lazy';
+                    im.className = 'rounded border';
+                    im.style.objectFit = 'cover';
+                    thumb.appendChild(im);
+                } else {
+                    const ph = document.createElement('div');
+                    ph.className = 'rounded bg-light border';
+                    ph.style.width = '56px';
+                    ph.style.height = '56px';
+                    thumb.appendChild(ph);
+                }
+
+                const mid = document.createElement('div');
+                mid.className = 'flex-grow-1 min-w-0';
+                const title = document.createElement('div');
+                title.className = 'fw-semibold text-truncate';
+                title.textContent = name;
+                title.title = name;
+                const meta = document.createElement('div');
+                meta.className = 'small text-muted';
+                meta.textContent = 'Số lượng: ' + qty;
+                mid.appendChild(title);
+                mid.appendChild(meta);
+
+                const right = document.createElement('div');
+                right.className = 'text-end';
+                const price = document.createElement('div');
+                price.className = 'fw-semibold';
+                price.textContent = formatVnd(qty * unit);
+                const unitRow = document.createElement('div');
+                unitRow.className = 'small text-muted';
+                unitRow.textContent = formatVnd(unit) + ' / sp';
+                right.appendChild(price);
+                right.appendChild(unitRow);
+
+                row.appendChild(thumb);
+                row.appendChild(mid);
+                row.appendChild(right);
+                els.orderItems.appendChild(row);
+            });
+        }
+
+        function calcSubtotal(items) {
+            return (items || []).reduce((s, it) => {
+                const qty = Number(it.quantity ?? it.Quantity ?? 0) || 0;
+                const unit = Number(it.unitPrice ?? it.UnitPrice ?? 0) || 0;
+                return s + qty * unit;
+            }, 0);
+        }
+
+        function renderPaymentMethods(methods) {
+            if (!els.paymentMethods) return;
+            els.paymentMethods.innerHTML = '';
+
+            methods.forEach((pm, idx) => {
+                const id = pm.id ?? pm.Id;
+                const name = pm.name ?? pm.Name ?? ('Phương thức #' + (idx + 1));
+
+                const label = document.createElement('label');
+                label.className = 'border rounded p-3 d-flex align-items-center gap-3';
+                label.style.cursor = 'pointer';
+
+                const input = document.createElement('input');
+                input.type = 'radio';
+                input.name = 'paymentMethod';
+                input.value = String(id);
+                input.className = 'form-check-input m-0';
+
+                const text = document.createElement('div');
+                text.className = 'flex-grow-1';
+                const title = document.createElement('div');
+                title.className = 'fw-semibold';
+                title.textContent = name;
+                const sub = document.createElement('div');
+                sub.className = 'small text-muted';
+                sub.textContent = 'Chọn phương thức thanh toán';
+                text.appendChild(title);
+                text.appendChild(sub);
+
+                label.appendChild(input);
+                label.appendChild(text);
+
+                input.addEventListener('change', function () {
+                    setPaymentError('');
+                });
+
+                els.paymentMethods.appendChild(label);
+            });
+        }
+
+        function fillSelect(selectEl, options, placeholder) {
+            if (!selectEl) return;
+            selectEl.innerHTML = '';
+            const ph = document.createElement('option');
+            ph.value = '';
+            ph.textContent = placeholder;
+            selectEl.appendChild(ph);
+            options.forEach((o) => {
+                const opt = document.createElement('option');
+                opt.value = String(o.code);
+                opt.textContent = o.name;
+                selectEl.appendChild(opt);
+            });
+        }
+
+        async function loadProvinces() {
+            const res = await fetch('https://provinces.open-api.vn/api/p/', { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) throw new Error('Không tải được tỉnh/thành');
+            const data = await res.json();
+            state.provinces = Array.isArray(data) ? data : [];
+            fillSelect(els.province, state.provinces, 'Chọn tỉnh/thành');
+        }
+
+        function resetDistricts() {
+            state.districts = [];
+            state.wards = [];
+            state.selectedDistrict = null;
+            state.selectedWard = null;
+            if (els.district) {
+                els.district.disabled = true;
+                fillSelect(els.district, [], 'Chọn quận/huyện');
+            }
+            if (els.ward) {
+                els.ward.disabled = true;
+                fillSelect(els.ward, [], 'Chọn phường/xã');
+            }
+        }
+
+        function resetWards() {
+            state.wards = [];
+            state.selectedWard = null;
+            if (els.ward) {
+                els.ward.disabled = true;
+                fillSelect(els.ward, [], 'Chọn phường/xã');
+            }
+        }
+
+        async function loadDistrictsByProvince(provinceCode) {
+            const res = await fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`, { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) throw new Error('Không tải được quận/huyện');
+            const data = await res.json();
+            state.districts = Array.isArray(data?.districts) ? data.districts : [];
+            if (els.district) {
+                els.district.disabled = false;
+                fillSelect(els.district, state.districts, 'Chọn quận/huyện');
+            }
+        }
+
+        async function loadWardsByDistrict(districtCode) {
+            const res = await fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`, { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) throw new Error('Không tải được phường/xã');
+            const data = await res.json();
+            state.wards = Array.isArray(data?.wards) ? data.wards : [];
+            if (els.ward) {
+                els.ward.disabled = false;
+                fillSelect(els.ward, state.wards, 'Chọn phường/xã');
+            }
+        }
+
+        function readSelectedText(selectEl) {
+            if (!selectEl) return '';
+            const idx = selectEl.selectedIndex;
+            if (idx < 0) return '';
+            const opt = selectEl.options[idx];
+            return (opt?.textContent || '').trim();
+        }
+
+        function validateForm() {
+            let ok = true;
+
+            const recipient = (els.recipientName?.value || '').trim();
+            const phone = (els.phoneNumber?.value || '').trim();
+            const provinceCode = (els.province?.value || '').trim();
+            const districtCode = (els.district?.value || '').trim();
+            const wardCode = (els.ward?.value || '').trim();
+            const street = (els.street?.value || '').trim();
+            const payment = document.querySelector('input[name="paymentMethod"]:checked')?.value;
+
+            clearFieldError(els.recipientName, els.errRecipientName);
+            clearFieldError(els.phoneNumber, els.errPhoneNumber);
+            clearFieldError(els.province, els.errProvince);
+            clearFieldError(els.district, els.errDistrict);
+            clearFieldError(els.ward, els.errWard);
+            clearFieldError(els.street, els.errStreet);
+            setPaymentError('');
+
+            if (!recipient) { ok = false; setFieldError(els.recipientName, els.errRecipientName, 'Vui lòng nhập tên người nhận.'); }
+            if (!phone) { ok = false; setFieldError(els.phoneNumber, els.errPhoneNumber, 'Vui lòng nhập số điện thoại.'); }
+            if (!provinceCode) { ok = false; setFieldError(els.province, els.errProvince, 'Vui lòng chọn tỉnh/thành.'); }
+            if (!districtCode) { ok = false; setFieldError(els.district, els.errDistrict, 'Vui lòng chọn quận/huyện.'); }
+            if (!wardCode) { ok = false; setFieldError(els.ward, els.errWard, 'Vui lòng chọn phường/xã.'); }
+            if (!street) { ok = false; setFieldError(els.street, els.errStreet, 'Vui lòng nhập số nhà và tên đường.'); }
+            if (!payment) { ok = false; setPaymentError('Vui lòng chọn phương thức thanh toán.'); }
+
+            return ok;
+        }
+
+        function buildShippingAddress() {
+            const street = (els.street?.value || '').trim();
+            const wardName = readSelectedText(els.ward);
+            const districtName = readSelectedText(els.district);
+            const provinceName = readSelectedText(els.province);
+            return [street, wardName, districtName, provinceName].filter(Boolean).join(', ');
+        }
+
+        function disableForm(disabled) {
+            if (!els.form) return;
+            Array.from(els.form.querySelectorAll('input, select, button')).forEach((el) => { el.disabled = !!disabled; });
+        }
+
+        async function init() {
+            show(els.error, false);
+            show(els.content, false);
+            show(els.loading, true);
+
+            try {
+                const raw = await fetchJson('/api/checkout');
+                const checkout = normalizeCheckout(raw);
+                state.checkout = checkout;
+
+                if (els.email) els.email.value = checkout.email || '';
+                renderItems(checkout.cartItems);
+                renderPaymentMethods(checkout.paymentMethods);
+
+                const sub = calcSubtotal(checkout.cartItems);
+                if (els.subtotal) els.subtotal.textContent = formatVnd(sub);
+                if (els.total) els.total.textContent = formatVnd(sub);
+
+                await loadProvinces();
+                resetDistricts();
+
+                show(els.loading, false);
+                show(els.content, true);
+            } catch (e) {
+                show(els.loading, false);
+                setError(e?.data?.message || e?.message || 'Không tải được trang thanh toán.');
+            }
+        }
+
+        if (els.province) {
+            els.province.addEventListener('change', async function () {
+                clearFieldError(els.province, els.errProvince);
+                resetDistricts();
+
+                const code = (els.province.value || '').trim();
+                if (!code) return;
+
+                try {
+                    els.district.disabled = true;
+                    fillSelect(els.district, [], 'Đang tải quận/huyện…');
+                    await loadDistrictsByProvince(code);
+                } catch (e) {
+                    resetDistricts();
+                    setFieldError(els.province, els.errProvince, 'Không tải được danh sách quận/huyện.');
+                }
+            });
+        }
+
+        if (els.district) {
+            els.district.addEventListener('change', async function () {
+                clearFieldError(els.district, els.errDistrict);
+                resetWards();
+
+                const code = (els.district.value || '').trim();
+                if (!code) return;
+
+                try {
+                    els.ward.disabled = true;
+                    fillSelect(els.ward, [], 'Đang tải phường/xã…');
+                    await loadWardsByDistrict(code);
+                } catch (e) {
+                    resetWards();
+                    setFieldError(els.district, els.errDistrict, 'Không tải được danh sách phường/xã.');
+                }
+            });
+        }
+
+        if (els.ward) {
+            els.ward.addEventListener('change', function () {
+                clearFieldError(els.ward, els.errWard);
+            });
+        }
+
+        if (els.recipientName) els.recipientName.addEventListener('input', function () { clearFieldError(els.recipientName, els.errRecipientName); });
+        if (els.phoneNumber) els.phoneNumber.addEventListener('input', function () { clearFieldError(els.phoneNumber, els.errPhoneNumber); });
+        if (els.street) els.street.addEventListener('input', function () { clearFieldError(els.street, els.errStreet); });
+
+        if (els.form) {
+            els.form.addEventListener('submit', async function (ev) {
+                ev.preventDefault();
+
+                if (!state.checkout?.cartItems?.length) {
+                    const msg = 'Giỏ hàng của bạn đang trống.';
+                    setError(msg);
+                    showToast(msg);
+                    return;
+                }
+
+                if (!validateForm()) return;
+
+                show(els.error, false);
+                show(els.placeOrderLoading, true);
+                disableForm(true);
+
+                const paymentId = parseInt(document.querySelector('input[name="paymentMethod"]:checked')?.value || '0', 10) || 0;
+                const payload = {
+                    recipientName: (els.recipientName.value || '').trim(),
+                    phoneNumber: (els.phoneNumber.value || '').trim(),
+                    shippingAddress: buildShippingAddress(),
+                    paymentMethodId: paymentId,
+                    orderItems: (state.checkout.cartItems || []).map((it) => ({
+                        productVariantId: it.productVariantId ?? it.ProductVariantId,
+                        quantity: it.quantity ?? it.Quantity
+                    }))
+                };
+
+                try {
+                    await fetchJson('/api/orders', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    window.refreshCartItemCount?.();
+                    window.location.href = '@Url.Content("~/order-success")';
+                } catch (e) {
+                    const msg =
+                        e?.data?.message
+                        || (typeof e?.data === 'string' ? e.data : null)
+                        || e?.message
+                        || 'Không tạo được đơn hàng. Vui lòng thử lại.';
+                    setError(msg);
+                    showToast(msg);
+                } finally {
+                    show(els.placeOrderLoading, false);
+                    disableForm(false);
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    })();
+</script>

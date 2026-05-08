@@ -4,33 +4,33 @@
     ViewData["Title"] = "Trang chủ";
 }
 
-<section class="hero-section p-0 m-0 w-100 vh-100 position-relative">
+<section class="hero-section p-0 m-0 w-100 position-relative">
     <div class="swiper hero-swiper w-100 h-100">
         <div class="swiper-wrapper">
             
             <div class="swiper-slide position-relative w-100 h-100">
-                <img src="~/images/banner-1.jpg" class="w-100 h-100" style="object-fit: cover; object-position: center;" alt="Ảnh bìa 1">
-                <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.15);"></div>
+                <img src="~/images/banner-1.jpg" class="hero-banner-image w-100 h-100" alt="Ảnh bìa 1">
+                <div class="hero-banner-overlay position-absolute top-0 start-0 w-100 h-100"></div>
             </div>
 
             <div class="swiper-slide position-relative w-100 h-100">
-                <img src="~/images/banner-2.jpg" class="w-100 h-100" style="object-fit: cover; object-position: center;" alt="Ảnh bìa 2">
-                <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.15);"></div>
+                <img src="~/images/banner-2.jpg" class="hero-banner-image w-100 h-100" alt="Ảnh bìa 2">
+                <div class="hero-banner-overlay position-absolute top-0 start-0 w-100 h-100"></div>
             </div>
 
             <div class="swiper-slide position-relative w-100 h-100">
-                <img src="~/images/banner-3.jpg" class="w-100 h-100" style="object-fit: cover; object-position: center;" alt="Ảnh bìa 3">
-                <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.15);"></div>
+                <img src="~/images/banner-3.jpg" class="hero-banner-image w-100 h-100" alt="Ảnh bìa 3">
+                <div class="hero-banner-overlay position-absolute top-0 start-0 w-100 h-100"></div>
             </div>
 
             <div class="swiper-slide position-relative w-100 h-100">
-                <img src="~/images/banner-4.jpg" class="w-100 h-100" style="object-fit: cover; object-position: center;" alt="Ảnh bìa 4">
-                <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.15);"></div>
+                <img src="~/images/banner-4.jpg" class="hero-banner-image w-100 h-100" alt="Ảnh bìa 4">
+                <div class="hero-banner-overlay position-absolute top-0 start-0 w-100 h-100"></div>
             </div>
 
             <div class="swiper-slide position-relative w-100 h-100">
-                <img src="~/images/banner-5.jpg" class="w-100 h-100" style="object-fit: cover; object-position: center;" alt="Ảnh bìa 5">
-                <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.15);"></div>
+                <img src="~/images/banner-5.jpg" class="hero-banner-image w-100 h-100" alt="Ảnh bìa 5">
+                <div class="hero-banner-overlay position-absolute top-0 start-0 w-100 h-100"></div>
             </div>
 
         </div>
@@ -96,7 +96,7 @@
                 </div>
             </div>
         </div>
-        <div class="row">
+        <div class="row g-3">
             @if (Model.FeaturedProducts != null && Model.FeaturedProducts.Any())
             {
                 foreach (var product in Model.FeaturedProducts)
@@ -111,7 +111,11 @@
                                     <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? Url.Content("~/images/dior-sauvage-edp.jpg") : product.ImageUrl)" alt="@product.Name">
                                 </a>
                                 <div class="button">
-                                    <a href="#" class="btn btn-primary"><i class="lni lni-cart"></i> Thêm vào giỏ</a>
+                                    <a href="#"
+                                       class="btn btn-primary btn-sm js-add-to-cart"
+                                       data-variant-id="@product.Id">
+                                        <i class="lni lni-cart"></i> Thêm vào giỏ
+                                    </a>
                                 </div>
                             </div>
                             <div class="product-info">
@@ -189,5 +193,38 @@
                 }
             });
         });
+    });
+
+    document.addEventListener('click', async function (e) {
+        const btn = e.target.closest('.js-add-to-cart');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (typeof window.addToCartAndOpenDrawer !== 'function') {
+            window.location.href = '/Auth/SignIn';
+            return;
+        }
+
+        const variantId = Number(btn.getAttribute('data-variant-id'));
+        if (!variantId) {
+            window.alert('Sản phẩm không hợp lệ.');
+            return;
+        }
+
+        const original = btn.innerHTML;
+        btn.classList.add('disabled');
+        btn.setAttribute('aria-disabled', 'true');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Đang thêm...';
+
+        try {
+            await window.addToCartAndOpenDrawer(variantId, 1);
+        } catch (error) {
+            window.alert(error?.message || 'Không thể thêm sản phẩm vào giỏ hàng.');
+        } finally {
+            btn.classList.remove('disabled');
+            btn.removeAttribute('aria-disabled');
+            btn.innerHTML = original;
+        }
     });
 </script>

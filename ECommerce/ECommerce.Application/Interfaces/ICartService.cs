@@ -8,6 +8,12 @@ namespace ECommerce.Application.Interfaces
 {
     public interface ICartService
     {
+        /// <summary>
+        /// Returns the number of distinct line items in the cart for the current customer.
+        /// Does not create a cart if one does not exist.
+        /// </summary>
+        Task<int> GetCartItemCountForCurrentCustomerAsync();
+
         Task<CartResponse> GetCartByCurrentCustomerOrCreateCartAsync();
         Task AddItemToCartAsync(AddCartItemRequest request);
         Task UpdateCartItemQuantityAsync(int itemId, UpdateCartItemQuantityRequest request);

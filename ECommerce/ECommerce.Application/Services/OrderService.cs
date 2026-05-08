@@ -1,9 +1,11 @@
 ﻿using ECommerce.Application.Common.Interfaces;
 using ECommerce.Application.Exceptions;
 using ECommerce.Application.Interfaces;
+using ECommerce.Domain.Common;
 using ECommerce.Domain.Entities;
 using ECommerce.Domain.Enums;
 using ECommerce.Domain.Interfaces;
+using ECommerce.Domain.QueryParameters;
 using ECommerce.SharedViewModels.DTOs.Request;
 using System;
 using System.Collections.Generic;
@@ -181,6 +183,7 @@ namespace ECommerce.Application.Services
                     else if (requestedItem.Quantity == selectedCartItem.Quantity)
                     {
                         cart.CartItems.Remove(selectedCartItem);
+                        cart.TotalItems = cart.TotalItems - 1;
                     }
                     else
                     {
@@ -229,6 +232,76 @@ namespace ECommerce.Application.Services
                 await _unitOfWork.RollbackTransactionAsync();
                 throw new ConflictException("An error occurred while creating the order. Please try again.");
             }
+        }
+
+        public async Task<PagedResult<MyOrderResponse>> GetMyOrdersAsync(OrderQueryParams parameters)
+        {
+            var userId = _currentUserService.UserId;
+            if (userId == null)
+            {
+                throw new UnauthorizedAccessException("User is not authenticated.");
+            }
+
+            var customer = await _customerRepository.GetByIdentityIdAsync((Guid)userId);
+            if (customer == null)
+            {
+                throw new UnauthorizedAccessException("User is not allowed to do this feature.");
+            }
+
+            var paged = await _orderRepository.GetByCustomerIdAsync(customer.Id, parameters);
+            var mapped = paged.Items.Select(o => o.ToMyOrderResponse()).ToList();
+
+            return new PagedResult<MyOrderResponse>(mapped, paged.TotalCount, paged.PageNumber, paged.PageSize);
+        }
+
+        public async Task<PagedResult<OrderResponse>> GetOrdersAsync(OrderQueryParams parameters)
+        {
+            if (!_currentUserService.IsAuthenticated)
+            {
+                throw new UnauthorizedAccessException("User is not authenticated.");
+            }
+
+            if (!_currentUserService.IsInRole("Admin"))
+            {
+                throw new ForbiddenException("Only admin can access all orders.");
+            }
+
+            var paged = await _orderRepository.GetAsync(parameters);
+            var mapped = paged.Items.Select(o => o.ToOrderResponse()).ToList();
+
+            return new PagedResult<OrderResponse>(mapped, paged.TotalCount, paged.PageNumber, paged.PageSize);
+        }
+
+        public async Task<OrderDetailsResponse> GetOrderDetailsAsync(int id)
+        {
+            var order = await _orderRepository.GetDetailsByIdAsync(id);
+            if (order == null)
+            {
+                throw new NotFoundException($"Order with id {id} not found.");
+            }
+
+            if (!_currentUserService.IsAuthenticated)
+            {
+                throw new UnauthorizedAccessException("User is not authenticated.");
+            }
+
+            var isAdmin = _currentUserService.IsInRole("Admin");
+            if (!isAdmin)
+            {
+                var isCustomer = _currentUserService.IsInRole("Customer");
+                if (!isCustomer)
+                {
+                    throw new ForbiddenException("You do not have permission to access this order.");
+                }
+
+                var currentUserId = _currentUserService.UserId;
+                if (!currentUserId.HasValue || order.Customer.IdentityId != currentUserId.Value)
+                {
+                    throw new ForbiddenException("You can only access your own orders.");
+                }
+            }
+
+            return order.ToOrderDetailsResponse();
         }
     }
 }

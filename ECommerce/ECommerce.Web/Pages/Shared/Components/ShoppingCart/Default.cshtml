@@ -1,0 +1,529 @@
+@* Cart trigger + drawer; data via BFF /api/cart*. Quantity/remove/clear update UI locally (no full cart refetch on success). *@
+<div class="header-cart-trigger">
+    <button class="btn btn-link position-relative text-white p-1" type="button" id="cartDrawerToggle"
+            data-bs-toggle="offcanvas" data-bs-target="#offcanvasCart" aria-controls="offcanvasCart" aria-label="Mở giỏ hàng">
+        <svg class="icon" width="24" height="24" role="img" aria-hidden="true"><use xlink:href="#cart"></use></svg>
+        <span id="cartItemCountBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary">0</span>
+    </button>
+</div>
+
+<div class="offcanvas offcanvas-end cart-drawer shadow" tabindex="-1" id="offcanvasCart"
+     aria-labelledby="cartDrawerTitle" data-bs-scroll="false" data-bs-backdrop="true">
+    <div class="offcanvas-header border-bottom py-3">
+        <h5 class="offcanvas-title mb-0" id="cartDrawerTitle">Giỏ hàng</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Đóng"></button>
+    </div>
+    <div class="offcanvas-body d-flex flex-column p-0">
+        <div id="cartDrawerLoading" class="cart-drawer-loading px-3 py-4 text-center text-muted d-none">
+            <span class="spinner-border spinner-border-sm me-2" role="status"></span>Đang tải…
+        </div>
+        <div id="cartDrawerError" class="alert alert-warning m-3 d-none" role="alert"></div>
+        <div id="cartDrawerEmpty" class="px-3 py-5 text-center text-muted d-none">Giỏ hàng trống.</div>
+        <div id="cartDrawerItems" class="flex-grow-1 overflow-auto px-3 pt-3 cart-drawer-items"></div>
+        <div id="cartDrawerFooter" class="border-top bg-light p-3 mt-auto d-none">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-body-secondary">Tạm tính</span>
+                <strong id="cartDrawerSubtotal" class="text-dark">0 ₫</strong>
+            </div>
+            <button type="button" class="btn btn-outline-danger w-100 mb-2" id="cartClearBtn">Xóa giỏ hàng</button>
+            <a class="btn btn-primary w-100" id="cartCheckoutBtn" href="/checkout">Thanh toán</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const badgeEl = document.getElementById('cartItemCountBadge');
+        const offcanvasEl = document.getElementById('offcanvasCart');
+        const loadingEl = document.getElementById('cartDrawerLoading');
+        const errorEl = document.getElementById('cartDrawerError');
+        const emptyEl = document.getElementById('cartDrawerEmpty');
+        const itemsEl = document.getElementById('cartDrawerItems');
+        const footerEl = document.getElementById('cartDrawerFooter');
+        const subtotalEl = document.getElementById('cartDrawerSubtotal');
+        const clearBtnEl = document.getElementById('cartClearBtn');
+
+        const base = '@Url.Content("~/")'.replace(/\/?$/, '');
+        const urls = {
+            itemCount: '@Url.Content("~/api/cart/item-count")',
+            cart: '@Url.Content("~/api/cart")',
+            addItem: function () { return base + '/api/cart/items'; },
+            patchItem: function (id) { return base + '/api/cart/items/' + id; },
+            deleteItem: function (id) { return base + '/api/cart/items/' + id; },
+            clearCart: function () { return base + '/api/cart/items'; }
+        };
+
+        const cartState = { lines: [] };
+
+        function formatVnd(value) {
+            try {
+                return new Intl.NumberFormat('vi-VN').format(value) + ' ₫';
+            } catch {
+                return value + ' ₫';
+            }
+        }
+
+        function setBadge(count) {
+            if (!badgeEl) return;
+            const n = Math.max(0, Number(count) || 0);
+            badgeEl.textContent = n > 99 ? '99+' : String(n);
+            badgeEl.classList.toggle('d-none', n === 0);
+        }
+
+        function showError(msg) {
+            if (!errorEl) return;
+            errorEl.textContent = msg;
+            errorEl.classList.remove('d-none');
+            setTimeout(function () { errorEl.classList.add('d-none'); }, 5000);
+        }
+
+        function confirmInModal(message) {
+            return new Promise(function (resolve) {
+                const modalEl = document.getElementById('cartConfirmModal');
+                const msgEl = document.getElementById('cartConfirmMessage');
+                const btnOk = document.getElementById('cartConfirmOk');
+                const btnCancel = document.getElementById('cartConfirmCancel');
+                if (!modalEl || !msgEl || !btnOk || !btnCancel || typeof window.bootstrap === 'undefined' || !window.bootstrap.Modal) {
+                    resolve(false);
+                    return;
+                }
+                const inst = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+                let resolved = false;
+
+                function finish(ok) {
+                    if (resolved) return;
+                    resolved = true;
+                    resolve(ok);
+                    inst.hide();
+                }
+
+                function onHidden() {
+                    modalEl.removeEventListener('hidden.bs.modal', onHidden);
+                    if (!resolved) {
+                        resolved = true;
+                        resolve(false);
+                    }
+                }
+
+                msgEl.textContent = message;
+                btnOk.onclick = function () { finish(true); };
+                btnCancel.onclick = function () { finish(false); };
+                modalEl.addEventListener('hidden.bs.modal', onHidden);
+                inst.show();
+            });
+        }
+
+        async function fetchJson(url, options) {
+            const res = await fetch(url, Object.assign({
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json' }
+            }, options || {}));
+            if (!res.ok) {
+                const err = new Error('HTTP ' + res.status);
+                err.status = res.status;
+                throw err;
+            }
+            const text = await res.text();
+            if (!text) return null;
+            try { return JSON.parse(text); } catch { return null; }
+        }
+
+        async function fetchOk(url, options) {
+            const res = await fetch(url, Object.assign({
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json' }
+            }, options || {}));
+            if (!res.ok) {
+                const err = new Error('HTTP ' + res.status);
+                err.status = res.status;
+                throw err;
+            }
+            return res;
+        }
+
+        function readErrorMessage(payload, fallback) {
+            if (!payload) return fallback;
+            if (typeof payload === 'string' && payload.trim()) return payload.trim();
+            if (typeof payload === 'object') {
+                if (typeof payload.message === 'string' && payload.message.trim()) return payload.message.trim();
+                if (typeof payload.title === 'string' && payload.title.trim()) return payload.title.trim();
+                if (typeof payload.detail === 'string' && payload.detail.trim()) return payload.detail.trim();
+                if (typeof payload.error === 'string' && payload.error.trim()) return payload.error.trim();
+            }
+            return fallback;
+        }
+
+        window.refreshCartItemCount = async function () {
+            if (!badgeEl) return;
+            try {
+                const data = await fetchJson(urls.itemCount);
+                setBadge(data.totalItems ?? data.TotalItems ?? 0);
+            } catch {
+                setBadge(0);
+            }
+        };
+
+        async function openCartDrawerAndReload() {
+            if (offcanvasEl && window.bootstrap?.Offcanvas) {
+                const inst = window.bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl);
+                inst.show();
+                await loadCartLines();
+                return;
+            }
+            await loadCartLines();
+        }
+
+        window.addToCartAndOpenDrawer = async function (productVariantId, quantity) {
+            const variantId = Number(productVariantId);
+            const qty = Math.max(1, Number(quantity) || 1);
+            if (!Number.isFinite(variantId) || variantId <= 0) {
+                const msg = 'Sản phẩm không hợp lệ.';
+                showError(msg);
+                throw new Error(msg);
+            }
+
+            try {
+                const response = await fetch(urls.addItem(), {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ productVariantId: variantId, quantity: qty })
+                });
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    let payload = null;
+                    if (text) {
+                        try { payload = JSON.parse(text); } catch { payload = text; }
+                    }
+                    const msg = readErrorMessage(payload, 'Không thể thêm sản phẩm vào giỏ hàng.');
+                    showError(msg);
+                    throw new Error(msg);
+                }
+
+                await window.refreshCartItemCount();
+                await openCartDrawerAndReload();
+            } catch (error) {
+                const msg = error?.message || 'Không thể thêm sản phẩm vào giỏ hàng.';
+                showError(msg);
+                throw error;
+            }
+        };
+
+        function normalizeLine(raw) {
+            const id = raw.id ?? raw.Id;
+            const qty = Math.max(1, parseInt(String(raw.quantity ?? raw.Quantity ?? 1), 10) || 1);
+            const unit = Number(raw.unitPrice ?? raw.UnitPrice ?? 0);
+            return {
+                id: id,
+                productName: raw.productName ?? raw.ProductName ?? '',
+                imageUrl: raw.imageUrl ?? raw.ImageUrl ?? '',
+                quantity: qty,
+                unitPrice: unit,
+                totalPrice: qty * unit
+            };
+        }
+
+        function recalcSubtotal() {
+            return cartState.lines.reduce(function (s, l) { return s + l.quantity * l.unitPrice; }, 0);
+        }
+
+        function syncFooterAndEmpty() {
+            if (!footerEl || !emptyEl || !subtotalEl) return;
+            if (!cartState.lines.length) {
+                emptyEl.classList.remove('d-none');
+                footerEl.classList.add('d-none');
+                itemsEl.innerHTML = '';
+                setBadge(0);
+                return;
+            }
+            emptyEl.classList.add('d-none');
+            footerEl.classList.remove('d-none');
+            subtotalEl.textContent = formatVnd(recalcSubtotal());
+            setBadge(cartState.lines.length);
+        }
+
+        function findLineIndex(id) {
+            return cartState.lines.findIndex(function (l) { return l.id === id; });
+        }
+
+        function setRowBusy(row, busy) {
+            row.classList.toggle('opacity-50', busy);
+            row.querySelectorAll('button, input').forEach(function (el) { el.disabled = !!busy; });
+        }
+
+        function updateRowDom(row, line) {
+            const qtyInput = row.querySelector('.cart-line-qty');
+            const unitEl = row.querySelector('.cart-line-unit');
+            const totalEl = row.querySelector('.cart-line-total');
+            if (qtyInput) {
+                qtyInput.value = String(line.quantity);
+                qtyInput.dataset.lastGood = String(line.quantity);
+            }
+            if (unitEl) unitEl.textContent = formatVnd(line.unitPrice);
+            if (totalEl) totalEl.textContent = formatVnd(line.quantity * line.unitPrice);
+            const minusBtn = row.querySelector('.cart-line-minus');
+            if (minusBtn) minusBtn.disabled = line.quantity <= 1;
+        }
+
+        async function patchQuantity(itemId, newQty, row) {
+            await fetchOk(urls.patchItem(itemId), {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ quantity: newQty })
+            });
+            const idx = findLineIndex(itemId);
+            if (idx >= 0) {
+                cartState.lines[idx].quantity = newQty;
+                cartState.lines[idx].totalPrice = newQty * cartState.lines[idx].unitPrice;
+                updateRowDom(row, cartState.lines[idx]);
+                subtotalEl.textContent = formatVnd(recalcSubtotal());
+            }
+        }
+
+        function renderLine(line) {
+            const wrap = document.createElement('div');
+            wrap.className = 'cart-line border-bottom pb-3 mb-3';
+            wrap.dataset.itemId = String(line.id);
+
+            const top = document.createElement('div');
+            top.className = 'd-flex gap-2 align-items-start';
+
+            if (line.imageUrl) {
+                const im = document.createElement('img');
+                im.src = line.imageUrl;
+                im.alt = '';
+                im.className = 'rounded cart-drawer-thumb flex-shrink-0';
+                im.width = 56;
+                im.height = 56;
+                im.loading = 'lazy';
+                im.style.objectFit = 'cover';
+                top.appendChild(im);
+            } else {
+                const ph = document.createElement('div');
+                ph.className = 'cart-drawer-thumb-placeholder flex-shrink-0 rounded bg-light';
+                top.appendChild(ph);
+            }
+
+            const main = document.createElement('div');
+            main.className = 'flex-grow-1 min-w-0';
+
+            const titleRow = document.createElement('div');
+            titleRow.className = 'd-flex justify-content-between align-items-start gap-2 mb-2';
+            const t = document.createElement('div');
+            t.className = 'small fw-semibold text-truncate';
+            t.title = line.productName;
+            t.textContent = line.productName;
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'btn btn-sm btn-outline-danger flex-shrink-0 cart-line-remove';
+            removeBtn.setAttribute('aria-label', 'Xóa sản phẩm');
+            removeBtn.textContent = '\u00d7';
+            titleRow.appendChild(t);
+            titleRow.appendChild(removeBtn);
+
+            const bottom = document.createElement('div');
+            bottom.className = 'd-flex justify-content-between align-items-end gap-2 flex-wrap';
+
+            const leftCol = document.createElement('div');
+            leftCol.className = 'flex-grow-1';
+            const unitRow = document.createElement('div');
+            unitRow.className = 'small text-muted mb-2';
+            unitRow.innerHTML = 'Đơn giá: <span class="text-dark cart-line-unit">' + formatVnd(line.unitPrice) + '</span>';
+
+            const qtyWrap = document.createElement('div');
+            qtyWrap.className = 'input-group input-group-sm cart-line-qty-group';
+            qtyWrap.style.maxWidth = '140px';
+            const minusBtn = document.createElement('button');
+            minusBtn.type = 'button';
+            minusBtn.className = 'btn btn-outline-secondary cart-line-minus';
+            minusBtn.textContent = '\u2212';
+            const qtyInput = document.createElement('input');
+            qtyInput.type = 'number';
+            qtyInput.min = '1';
+            qtyInput.step = '1';
+            qtyInput.className = 'form-control text-center cart-line-qty';
+            qtyInput.value = String(line.quantity);
+            qtyInput.dataset.lastGood = String(line.quantity);
+            const plusBtn = document.createElement('button');
+            plusBtn.type = 'button';
+            plusBtn.className = 'btn btn-outline-secondary cart-line-plus';
+            plusBtn.textContent = '+';
+            qtyWrap.appendChild(minusBtn);
+            qtyWrap.appendChild(qtyInput);
+            qtyWrap.appendChild(plusBtn);
+
+            leftCol.appendChild(unitRow);
+            leftCol.appendChild(qtyWrap);
+
+            const rightCol = document.createElement('div');
+            rightCol.className = 'text-end ms-auto';
+            const totalLabel = document.createElement('div');
+            totalLabel.className = 'small text-muted';
+            totalLabel.textContent = 'Thành tiền';
+            const totalVal = document.createElement('div');
+            totalVal.className = 'fw-semibold text-primary cart-line-total';
+            totalVal.textContent = formatVnd(line.quantity * line.unitPrice);
+            rightCol.appendChild(totalLabel);
+            rightCol.appendChild(totalVal);
+
+            bottom.appendChild(leftCol);
+            bottom.appendChild(rightCol);
+
+            main.appendChild(titleRow);
+            main.appendChild(bottom);
+            top.appendChild(main);
+            wrap.appendChild(top);
+
+            minusBtn.disabled = line.quantity <= 1;
+
+            function revertQtyInput() {
+                const last = parseInt(qtyInput.dataset.lastGood || '1', 10) || 1;
+                qtyInput.value = String(last);
+            }
+
+            minusBtn.addEventListener('click', async function () {
+                const q = parseInt(qtyInput.value, 10) || 1;
+                if (q <= 1) return;
+                setRowBusy(wrap, true);
+                try {
+                    await patchQuantity(line.id, q - 1, wrap);
+                    qtyInput.dataset.lastGood = String(q - 1);
+                } catch (e) {
+                    showError('Không cập nhật được số lượng. Vui lòng thử lại.');
+                    revertQtyInput();
+                } finally {
+                    setRowBusy(wrap, false);
+                }
+            });
+
+            plusBtn.addEventListener('click', async function () {
+                const q = parseInt(qtyInput.value, 10) || 1;
+                setRowBusy(wrap, true);
+                try {
+                    await patchQuantity(line.id, q + 1, wrap);
+                    qtyInput.dataset.lastGood = String(q + 1);
+                } catch (e) {
+                    showError('Không cập nhật được số lượng (có thể vượt tồn kho).');
+                    revertQtyInput();
+                } finally {
+                    setRowBusy(wrap, false);
+                }
+            });
+
+            qtyInput.addEventListener('change', function () { qtyInput.blur(); });
+
+            qtyInput.addEventListener('blur', async function () {
+                let v = parseInt(qtyInput.value, 10);
+                if (!isFinite(v) || v < 1) {
+                    revertQtyInput();
+                    return;
+                }
+                const last = parseInt(qtyInput.dataset.lastGood || '1', 10) || 1;
+                if (v === last) return;
+                setRowBusy(wrap, true);
+                try {
+                    await patchQuantity(line.id, v, wrap);
+                    qtyInput.dataset.lastGood = String(v);
+                } catch (e) {
+                    showError('Không cập nhật được số lượng (có thể vượt tồn kho).');
+                    revertQtyInput();
+                    const idx = findLineIndex(line.id);
+                    if (idx >= 0) updateRowDom(wrap, cartState.lines[idx]);
+                } finally {
+                    setRowBusy(wrap, false);
+                }
+            });
+
+            removeBtn.addEventListener('click', async function () {
+                if (!(await confirmInModal('Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?'))) return;
+                setRowBusy(wrap, true);
+                try {
+                    await fetchOk(urls.deleteItem(line.id), { method: 'DELETE' });
+                    cartState.lines = cartState.lines.filter(function (l) { return l.id !== line.id; });
+                    wrap.remove();
+                    syncFooterAndEmpty();
+                    window.refreshCartItemCount();
+                } catch (e) {
+                    showError('Không xóa được sản phẩm. Vui lòng thử lại.');
+                } finally {
+                    setRowBusy(wrap, false);
+                }
+            });
+
+            return wrap;
+        }
+
+        function renderAllLines() {
+            if (!itemsEl) return;
+            itemsEl.innerHTML = '';
+            cartState.lines.forEach(function (line) {
+                itemsEl.appendChild(renderLine(line));
+            });
+        }
+
+        async function loadCartLines() {
+            if (!itemsEl || !footerEl || !emptyEl || !loadingEl || !errorEl || !subtotalEl) return;
+            errorEl.classList.add('d-none');
+            emptyEl.classList.add('d-none');
+            footerEl.classList.add('d-none');
+            itemsEl.innerHTML = '';
+            loadingEl.classList.remove('d-none');
+
+            try {
+                const cart = await fetchJson(urls.cart);
+                loadingEl.classList.add('d-none');
+                const rawLines = cart.cartItems ?? cart.CartItems ?? [];
+                cartState.lines = rawLines.map(normalizeLine);
+
+                if (!cartState.lines.length) {
+                    syncFooterAndEmpty();
+                    return;
+                }
+
+                renderAllLines();
+                subtotalEl.textContent = formatVnd(recalcSubtotal());
+                footerEl.classList.remove('d-none');
+                emptyEl.classList.add('d-none');
+                const countFromApi = cart.totalItems ?? cart.TotalItems;
+                setBadge(countFromApi != null ? countFromApi : cartState.lines.length);
+            } catch (e) {
+                loadingEl.classList.add('d-none');
+                errorEl.textContent = 'Không tải được giỏ hàng. Vui lòng thử lại.';
+                errorEl.classList.remove('d-none');
+            }
+        }
+
+        if (clearBtnEl) {
+            clearBtnEl.addEventListener('click', async function () {
+                if (!cartState.lines.length) return;
+                if (!(await confirmInModal('Bạn có chắc muốn xóa toàn bộ giỏ hàng?'))) return;
+                clearBtnEl.disabled = true;
+                try {
+                    await fetchOk(urls.clearCart(), { method: 'DELETE' });
+                    cartState.lines = [];
+                    itemsEl.innerHTML = '';
+                    syncFooterAndEmpty();
+                    window.refreshCartItemCount();
+                } catch (e) {
+                    showError('Không xóa được giỏ hàng. Vui lòng thử lại.');
+                } finally {
+                    clearBtnEl.disabled = false;
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            window.refreshCartItemCount();
+        });
+
+        if (offcanvasEl) {
+            offcanvasEl.addEventListener('show.bs.offcanvas', function () {
+                loadCartLines();
+            });
+            offcanvasEl.addEventListener('hidden.bs.offcanvas', function () {
+                window.refreshCartItemCount();
+            });
+        }
+    })();
+</script>

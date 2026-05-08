@@ -1,5 +1,9 @@
 ﻿using ECommerce.Domain.Entities;
+using ECommerce.Domain.Common;
+using ECommerce.Domain.Enums;
 using ECommerce.Domain.Interfaces;
+using ECommerce.Domain.QueryParameters;
+using ECommerce.Infrastructure.Persistence.Extensions;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -34,6 +38,72 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
         {
             _context.Orders.Update(order);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<PagedResult<Order>> GetByCustomerIdAsync(Guid customerId, OrderQueryParams parameters, CancellationToken cancellationToken = default)
+        {
+            var query = BuildOrderQuery(parameters)
+                .Where(o => o.Customer.Id == customerId);
+
+            return await query.ToPagedListAsync(parameters.PageNumber, parameters.PageSize);
+        }
+
+        public async Task<PagedResult<Order>> GetAsync(OrderQueryParams parameters, CancellationToken cancellationToken = default)
+        {
+            var query = BuildOrderQuery(parameters);
+            return await query.ToPagedListAsync(parameters.PageNumber, parameters.PageSize);
+        }
+
+        public async Task<Order?> GetDetailsByIdAsync(int id, CancellationToken cancellationToken = default)
+        {
+            return await _context.Orders
+                .AsNoTracking()
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.ProductVariant).ThenInclude(pv => pv.Images)
+                .Include(o => o.Customer)
+                .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+        }
+
+        private IQueryable<Order> BuildOrderQuery(OrderQueryParams parameters)
+        {
+            var query = _context.Orders
+                .AsNoTracking()
+                .Include(o => o.Customer)
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.ProductVariant).ThenInclude(pv => pv.Images)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(parameters.SearchTerm))
+            {
+                var term = parameters.SearchTerm.Trim();
+                query = query.Where(o =>
+                    o.RecipientName.Contains(term)
+                    || o.PhoneNumber.Contains(term)
+                    || o.ShippingAddress.Contains(term));
+            }
+
+            if (!string.IsNullOrWhiteSpace(parameters.Status)
+                && Enum.TryParse<OrderStatus>(parameters.Status.Trim(), true, out var parsedStatus))
+            {
+                query = query.Where(o => o.Status == parsedStatus);
+            }
+
+            query = parameters.SortBy?.Trim().ToLowerInvariant() switch
+            {
+                "id" => query.OrderBy(o => o.Id),
+                "id_desc" => query.OrderByDescending(o => o.Id),
+                "totalamount" => query.OrderBy(o => o.TotalAmount),
+                "totalamount_desc" => query.OrderByDescending(o => o.TotalAmount),
+                "status" => query.OrderBy(o => o.Status),
+                "status_desc" => query.OrderByDescending(o => o.Status),
+                "orderdate" => query.OrderBy(o => o.OrderDate),
+                "orderdate_desc" => query.OrderByDescending(o => o.OrderDate),
+                "completeddate" => query.OrderBy(o => o.CompletedDate),
+                "completeddate_desc" => query.OrderByDescending(o => o.CompletedDate),
+                _ => query.OrderByDescending(o => o.OrderDate)
+            };
+
+            return query;
         }
     }
 }

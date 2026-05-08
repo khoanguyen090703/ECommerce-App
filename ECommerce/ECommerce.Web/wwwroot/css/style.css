@@ -373,6 +373,40 @@ h6 {
 }
 
 /* *** Start editing below this line *** */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 1040;
+}
+
+.site-logo {
+  height: 88px;
+  width: auto;
+}
+
+.hero-section {
+  height: clamp(320px, 62vh, 620px);
+}
+
+.hero-banner-image {
+  object-fit: cover;
+  object-position: center;
+}
+
+.hero-banner-overlay {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.06) 0%, rgba(0, 0, 0, 0.12) 100%);
+}
+
+@media screen and (max-width: 768px) {
+  .site-logo {
+    height: 64px;
+  }
+
+  .hero-section {
+    height: clamp(260px, 42vh, 420px);
+  }
+}
+
 .container-fluid {
   max-width: 1600px;
 }
@@ -908,60 +942,95 @@ h6 {
 }
 
 .single-product {
-  border: 1px solid #eee;
-  border-radius: 4px;
-  transition: all 0.4s ease;
-  margin-top: 30px;
-  box-shadow: 0px 0px 20px #00000012;
-  padding: 8px;
+  border: 1px solid #eaeaea;
+  border-radius: 8px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  margin-top: 16px;
+  box-shadow: none;
+  padding: 6px;
   background: #fff;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.single-product:hover {
+  border-color: #d8d8d8;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
 }
 
 .single-product .product-image {
   overflow: hidden;
   position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 160px;
+  background: #fafafa;
+  border-radius: 6px;
 }
 
 .single-product .product-image img {
-  width: 100%;
-  transition: all 0.4s ease;
+  width: auto;
+  max-width: 100%;
+  max-height: 148px;
+  height: auto;
+  object-fit: contain;
+  transition: transform 0.3s ease;
 }
 
 .single-product .product-image .button {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: -60px;
-  transition: all 0.4s ease;
+  bottom: -48px;
+  transition: all 0.25s ease;
   opacity: 0;
   visibility: hidden;
 }
 
+.single-product .product-image .button .btn {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.8rem;
+}
+
 .single-product:hover .product-image .button {
-  bottom: 30px;
+  bottom: 10px;
   opacity: 1;
   visibility: visible;
 }
 
 .single-product:hover .product-image img {
-  transform: scale(1.1);
+  transform: scale(1.04);
 }
 
 .single-product .product-info {
-  padding: 20px;
+  padding: 10px 6px 8px;
   background-color: #fff;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .single-product .product-info .category {
   color: #888;
-  font-size: 13px;
+  font-size: 11px;
   display: block;
   margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.single-product .product-info .title {
+  margin: 0;
+  line-height: 1.35;
 }
 
 .single-product .product-info .title a {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   color: #081828;
 }
 
@@ -989,17 +1058,75 @@ h6 {
 }
 
 .single-product .product-info .price {
-  margin-top: 15px;
+  margin-top: auto;
+  padding-top: 6px;
 }
 
 .single-product .product-info .price span {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
   color: #0167F3;
 }
 
+.single-product .product-info .badge {
+  font-size: 0.65rem;
+  font-weight: 500;
+  padding: 0.2em 0.45em;
+  margin-bottom: 4px;
+  align-self: flex-start;
+}
+
 .trending-product {
   background-color: #f9f9f9;
+}
+
+.trending-product .section-title {
+  margin-bottom: 24px;
+}
+
+/* Cart drawer (offcanvas): slightly darker backdrop, compact line items */
+.offcanvas-backdrop.cart-drawer-backdrop,
+.offcanvas-backdrop {
+  background-color: #000;
+}
+
+.offcanvas-backdrop.show {
+  opacity: 0.5;
+}
+
+.cart-drawer {
+  --bs-offcanvas-width: min(630px, 100vw);
+  max-width: min(630px, 100vw);
+  width: min(630px, 100vw);
+}
+
+.cart-drawer-thumb,
+.cart-drawer-thumb-placeholder {
+  width: 56px;
+  height: 56px;
+}
+
+.cart-drawer-loading {
+  min-height: 4rem;
+}
+
+.cart-drawer-items .cart-line-qty::-webkit-outer-spin-button,
+.cart-drawer-items .cart-line-qty::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.cart-drawer-items .cart-line-qty {
+  -moz-appearance: textfield;
+}
+
+/* Cart confirm: keep above sticky header + offcanvas stacking (modal lives in body; this is a safety net). */
+#cartConfirmModal.modal {
+  z-index: 1080;
+}
+
+body:has(#cartConfirmModal.modal.show) .modal-backdrop {
+  z-index: 1075;
 }
 
 .section-title {

@@ -46,40 +46,6 @@
     .active-filter-badge a:hover {
         color: #a71d2a;
     }
-    .product-image {
-        position: relative;
-        overflow: hidden;
-    }
-    .product-image img {
-        width: 100%;
-        height: auto;
-        transition: transform 0.3s;
-    }
-    .product-image:hover img {
-        transform: scale(1.05);
-    }
-    .single-product {
-        border: 1px solid #eee;
-        border-radius: 8px;
-        padding: 15px;
-        text-align: center;
-        background: #fff;
-        transition: box-shadow 0.3s;
-        height: 100%;
-    }
-    .single-product:hover {
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-    .product-info .title {
-        font-size: 1.1rem;
-        margin-top: 15px;
-        margin-bottom: 10px;
-    }
-    .product-info .price {
-        font-weight: bold;
-        color: #28a745;
-        font-size: 1.2rem;
-    }
 </style>
 
 <div class="container py-5">
@@ -192,12 +158,12 @@
             </div>
 
             <!-- Product Grid -->
-            <div class="row">
+            <div class="row g-3">
                 @if (Model.VariantsData != null && Model.VariantsData.Items.Any())
                 {
                     foreach (var product in Model.VariantsData.Items)
                     {
-                        <div class="col-lg-4 col-md-6 col-12 mb-4">
+                        <div class="col-lg-4 col-md-6 col-12 mb-3">
                             <!-- Start Single Product -->
                             <div class="single-product product-card-link"
                                  data-id="@product.Id"
@@ -206,8 +172,12 @@
                                     <a asp-page="/ProductVariants/ProductDetails" asp-route-id="@product.Id">
                                         <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? Url.Content("~/images/dior-sauvage-edp.jpg") : product.ImageUrl)" alt="@product.Name">
                                     </a>
-                                    <div class="button mt-3 text-center">
-                                        <a href="#" class="btn btn-primary btn-sm"><i class="lni lni-cart"></i> Thêm vào giỏ</a>
+                                    <div class="button text-center">
+                                        <a href="#"
+                                           class="btn btn-primary btn-sm js-add-to-cart"
+                                           data-variant-id="@product.Id">
+                                            <i class="lni lni-cart"></i> Thêm vào giỏ
+                                        </a>
                                     </div>
                                 </div>
                                 <div class="product-info">
@@ -348,6 +318,39 @@
                     window.location.href = detailUrl;
                 }
             });
+        });
+
+        document.addEventListener('click', async function(e) {
+            var btn = e.target.closest('.js-add-to-cart');
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (typeof window.addToCartAndOpenDrawer !== 'function') {
+                window.location.href = '/Auth/SignIn';
+                return;
+            }
+
+            var variantId = Number(btn.getAttribute('data-variant-id'));
+            if (!variantId) {
+                window.alert('Sản phẩm không hợp lệ.');
+                return;
+            }
+
+            var original = btn.innerHTML;
+            btn.classList.add('disabled');
+            btn.setAttribute('aria-disabled', 'true');
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Đang thêm...';
+
+            try {
+                await window.addToCartAndOpenDrawer(variantId, 1);
+            } catch (error) {
+                window.alert(error?.message || 'Không thể thêm sản phẩm vào giỏ hàng.');
+            } finally {
+                btn.classList.remove('disabled');
+                btn.removeAttribute('aria-disabled');
+                btn.innerHTML = original;
+            }
         });
     </script>
 }

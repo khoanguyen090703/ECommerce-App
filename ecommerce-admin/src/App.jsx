@@ -9,6 +9,8 @@ import { ProductDetailPage } from './pages/ProductDetailPage'
 import { ProductCreatePage } from './pages/ProductCreatePage'
 import { ProductEditPage } from './pages/ProductEditPage'
 import { ProductsPage } from './pages/ProductsPage'
+import { OrderDetailPage } from './pages/OrderDetailPage'
+import { OrdersPage } from './pages/OrdersPage'
 import  LoginPage  from './pages/LoginPage'
 import { OverviewPage } from './pages/OverviewPage'
 import './App.css'
@@ -51,6 +53,15 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    label: 'Orders',
+    to: '/orders',
+    icon: (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 2v12h10V6H7Zm2 2h6v2H9V8Zm0 4h6v2H9v-2Z" />
+      </svg>
+    ),
+  },
 ]
 
 const pageTitles = {
@@ -58,6 +69,7 @@ const pageTitles = {
   customers: 'Customers',
   products: 'Products',
   categories: 'Categories',
+  orders: 'Orders',
 }
 
 function Sidebar() {
@@ -200,6 +212,8 @@ function AdminLayout() {
             <Route path="/products/:productId" element={<ProductDetailPage />} />
             <Route path="/products/:productId/edit" element={<ProductEditPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
+            <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/orders/:orderId" element={<OrderDetailPage />} />
           </Routes>
         </main>
       </div>

@@ -34,6 +34,19 @@ namespace ECommerce.Application.Services
             _cartItemRepository = cartItemRepository;
         }
 
+        public async Task<int> GetCartItemCountForCurrentCustomerAsync()
+        {
+            var customer = await GetCustomerByCurrentUserService();
+
+            var cart = await _cartRepository.GetByCustomerIdAsync(customer.Id.ToString());
+            if (cart == null)
+            {
+                return 0;
+            }
+
+            return cart.TotalItems;
+        }
+
         public async Task AddItemToCartAsync(AddCartItemRequest request)
         {
             var customer = await GetCustomerByCurrentUserService();
