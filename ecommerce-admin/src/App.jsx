@@ -1,19 +1,22 @@
-import { useState } from 'react'
-import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { BrowserRouter, Navigate, NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import adminLogo from './assets/admin-logo.png'
+import { Toaster } from 'react-hot-toast'
+import { apiClient, getStoredAccessToken, logoutFromServer, resolveImageUrl, setSessionInvalidHandler } from './lib/api'
 import { CategoriesPage } from './pages/CategoriesPage'
+import { CustomersPage } from './pages/CustomersPage'
+import { ProductDetailPage } from './pages/ProductDetailPage'
+import { ProductCreatePage } from './pages/ProductCreatePage'
+import { ProductEditPage } from './pages/ProductEditPage'
+import { ProductsPage } from './pages/ProductsPage'
+import  LoginPage  from './pages/LoginPage'
+import { OverviewPage } from './pages/OverviewPage'
 import './App.css'
-
-const user = {
-  fullName: 'Nguyen Minh Anh',
-  email: 'minhanh.admin@example.com',
-  initials: 'MA',
-}
 
 const navItems = [
   {
     label: 'Overview',
-    to: '/',
+    to: '/dashboard',
     end: true,
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -57,19 +60,6 @@ const pageTitles = {
   categories: 'Categories',
 }
 
-function DashboardPage({ title }) {
-  return (
-    <section className="dashboard-card">
-      <span className="eyebrow">ECommerce Admin</span>
-      <h1>{title}</h1>
-      <p>
-        Main content area for the {title.toLowerCase()} page. You can replace this placeholder
-        with charts, tables, forms, or page-specific modules later.
-      </p>
-    </section>
-  )
-}
-
 function Sidebar() {
   return (
     <aside className="sidebar" aria-label="Main navigation">
@@ -98,6 +88,58 @@ function Sidebar() {
 
 function Header() {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [profile, setProfile] = useState({
+    fullName: '',
+    email: '',
+    avatarUrl: '',
+  })
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const res = await apiClient.get('/api/users/me')
+        if (cancelled) return
+        const payload = res.data ?? {}
+        setProfile({
+          fullName: payload.fullName ?? payload.name ?? '',
+          email: payload.email ?? '',
+          avatarUrl: payload.avatarUrl ?? payload.profileImageUrl ?? '',
+        })
+      } catch {
+        if (!cancelled) {
+          setProfile({
+            fullName: '',
+            email: '',
+            avatarUrl: '',
+          })
+        }
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const initials = useMemo(() => {
+    const source = profile.fullName?.trim() || profile.email?.trim()
+    if (!source) return 'U'
+    return source
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? '')
+      .join('')
+  }, [profile.fullName, profile.email])
+
+  const displayName = profile.fullName?.trim() || 'User'
+  const displayEmail = profile.email?.trim() || '—'
+  const avatarSrc = resolveImageUrl(profile.avatarUrl)
+
+  async function logout() {
+    await logoutFromServer()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <header className="top-header">
@@ -115,22 +157,24 @@ function Header() {
           aria-expanded={isProfileOpen}
           onClick={() => setIsProfileOpen((current) => !current)}
         >
-          {user.initials}
+          {avatarSrc ? <img src={avatarSrc} alt={displayName} className="avatar-image" /> : initials}
         </button>
 
         <div className="profile-tooltip" role="tooltip">
-          <strong>{user.fullName}</strong>
-          <span>{user.email}</span>
+          <strong>{displayName}</strong>
+          <span>{displayEmail}</span>
         </div>
 
         {isProfileOpen && (
           <div className="profile-popover">
-            <div className="popover-avatar">{user.initials}</div>
-            <div>
-              <p className="hello-text">Hello {user.fullName}</p>
-              <p className="email-text">{user.email}</p>
+            <div className="popover-avatar">
+              {avatarSrc ? <img src={avatarSrc} alt={displayName} className="avatar-image" /> : initials}
             </div>
-            <button className="logout-button" type="button">
+            <div>
+              <p className="hello-text">Hello {displayName}</p>
+              <p className="email-text">{displayEmail}</p>
+            </div>
+            <button className="logout-button" type="button" onClick={logout}>
               Logout
             </button>
           </div>
@@ -148,9 +192,13 @@ function AdminLayout() {
         <Header />
         <main className="content">
           <Routes>
-            <Route path="/" element={<DashboardPage title={pageTitles.overview} />} />
-            <Route path="/customers" element={<DashboardPage title={pageTitles.customers} />} />
-            <Route path="/products" element={<DashboardPage title={pageTitles.products} />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<OverviewPage />} />
+            <Route path="/customers" element={<CustomersPage />} />
+            <Route path="/products" element={<ProductsPage />} />
+            <Route path="/products/new" element={<ProductCreatePage />} />
+            <Route path="/products/:productId" element={<ProductDetailPage />} />
+            <Route path="/products/:productId/edit" element={<ProductEditPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
           </Routes>
         </main>
@@ -159,10 +207,64 @@ function AdminLayout() {
   )
 }
 
+function RootRedirect() {
+  return <Navigate to={getStoredAccessToken() ? '/dashboard' : '/login'} replace />
+}
+
+function LoginRoute() {
+  if (getStoredAccessToken()) {
+    return <Navigate to="/dashboard" replace />
+  }
+  return <LoginPage />
+}
+
+function ProtectedAdminLayout() {
+  if (!getStoredAccessToken()) {
+    return <Navigate to="/login" replace />
+  }
+  return <AdminLayout />
+}
+
+function AppRoutes() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    setSessionInvalidHandler(() => {
+      navigate('/login', { replace: true })
+    })
+    return () => setSessionInvalidHandler(null)
+  }, [navigate])
+
+  return (
+    <Routes>
+      <Route path="/" element={<RootRedirect />} />
+      <Route path="/login" element={<LoginRoute />} />
+      <Route path="/*" element={<ProtectedAdminLayout />} />
+    </Routes>
+  )
+}
+
 function App() {
   return (
     <BrowserRouter>
-      <AdminLayout />
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#1c1b18',
+            color: '#f4efe6',
+            border: '1px solid rgba(201, 169, 98, 0.35)',
+          },
+          success: {
+            iconTheme: { primary: '#c9a962', secondary: '#1c1b18' },
+          },
+          error: {
+            iconTheme: { primary: '#c45c5c', secondary: '#1c1b18' },
+          },
+        }}
+      />
+      <AppRoutes />
     </BrowserRouter>
   )
 }

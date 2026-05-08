@@ -1,13 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { apiClient, readApiErrorMessage, resolveImageUrl } from '../lib/api'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
-
-function resolveImageUrl(url) {
-  if (!url) return null
-  if (/^https?:\/\//i.test(url)) return url
-  const origin = API_BASE || 'http://localhost:5206'
-  return url.startsWith('/') ? `${origin}${url}` : `${origin}/${url}`
-}
 
 function formatDate(iso) {
   if (iso == null || iso === '') return '—'
@@ -25,28 +18,12 @@ async function fetchCategories({ pageNumber, pageSize, searchTerm, sortBy }) {
   params.set('pageSize', String(pageSize))
   if (searchTerm?.trim()) params.set('searchTerm', searchTerm.trim())
   if (sortBy) params.set('sortBy', sortBy)
-  const res = await fetch(`${API_BASE}/api/categories?${params.toString()}`)
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(text || `Request failed (${res.status})`)
-  }
-  return res.json()
-}
-
-/** Đọc thông báo lỗi từ API (JSON { error }, ProblemDetails, hoặc text thuần). */
-async function readApiErrorMessage(res) {
-  const text = await res.text()
-  const fallback = `Thao tác thất bại (mã ${res.status}).`
-  if (!text?.trim()) return fallback
   try {
-    const json = JSON.parse(text)
-    if (typeof json.error === 'string' && json.error.trim()) return json.error.trim()
-    if (typeof json.detail === 'string' && json.detail.trim()) return json.detail.trim()
-    if (typeof json.title === 'string' && json.title.trim()) return json.title.trim()
-  } catch {
-    /* plain text */
+    const res = await apiClient.get(`/api/categories?${params.toString()}`)
+    return res.data
+  } catch (error) {
+    throw new Error(readApiErrorMessage(error))
   }
-  return text.trim() || fallback
 }
 
 const MAX_CATEGORY_NAME_LEN = 200
@@ -79,26 +56,26 @@ function isValidHttpImageUrl(s) {
 }
 
 async function fetchCategoryById(id) {
-  const res = await fetch(`${API_BASE}/api/categories/${id}`)
-  if (!res.ok) {
-    const msg = await readApiErrorMessage(res)
-    throw new Error(msg)
+  try {
+    const res = await apiClient.get(`/api/categories/${id}`)
+    return res.data
+  } catch (error) {
+    throw new Error(readApiErrorMessage(error))
   }
-  return res.json()
 }
 
 async function uploadCategoryImage(file) {
   const fd = new FormData()
   fd.append('file', file)
-  const res = await fetch(`${API_BASE}/api/images/upload`, {
-    method: 'POST',
-    body: fd,
-  })
-  if (!res.ok) {
-    const msg = await readApiErrorMessage(res)
-    throw new Error(msg)
+  let json
+  try {
+    const res = await apiClient.post('/api/images/upload', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    json = res.data
+  } catch (error) {
+    throw new Error(readApiErrorMessage(error))
   }
-  const json = await res.json()
   const url = json.secureUrl ?? json.SecureUrl
   if (!url || typeof url !== 'string') {
     throw new Error('Máy chủ không trả về đường dẫn ảnh.')
@@ -401,15 +378,7 @@ export function CategoriesPage() {
       const body = { name, description }
       if (imageUrl) body.imageUrl = imageUrl
 
-      const res = await fetch(`${API_BASE}/api/categories`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      if (!res.ok) {
-        const msg = await readApiErrorMessage(res)
-        throw new Error(msg)
-      }
+      await apiClient.post('/api/categories', body)
       resetCreateModalState()
       setCreateOpen(false)
       setToastMessage('Đã tạo danh mục thành công.')
@@ -603,19 +572,11 @@ export function CategoriesPage() {
         throw new Error('URL ảnh sau khi tải lên không hợp lệ.')
       }
 
-      const res = await fetch(`${API_BASE}/api/categories/${editCategoryId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          description,
-          imageUrl: trimmedUrl,
-        }),
+      await apiClient.put(`/api/categories/${editCategoryId}`, {
+        name,
+        description,
+        imageUrl: trimmedUrl,
       })
-      if (!res.ok) {
-        const msg = await readApiErrorMessage(res)
-        throw new Error(msg)
-      }
       closeEditModal()
       setToastMessage('Đã cập nhật danh mục thành công.')
       setListVersion((v) => v + 1)
@@ -634,13 +595,7 @@ export function CategoriesPage() {
     if (!row) return
     setDeleteSubmitting(true)
     try {
-      const res = await fetch(`${API_BASE}/api/categories/${row.id}`, { method: 'DELETE' })
-      if (!res.ok) {
-        const msg = await readApiErrorMessage(res)
-        setDeleteConfirmRow(null)
-        setDeleteErrorMessage(msg)
-        return
-      }
+      await apiClient.delete(`/api/categories/${row.id}`)
       setDeleteConfirmRow(null)
       setToastMessage('Đã xóa danh mục thành công.')
       if (data?.items?.length === 1 && pageNumber > 1) {
@@ -648,9 +603,9 @@ export function CategoriesPage() {
       } else {
         setListVersion((v) => v + 1)
       }
-    } catch {
+    } catch (error) {
       setDeleteConfirmRow(null)
-      setDeleteErrorMessage('Không kết nối được máy chủ. Vui lòng thử lại sau.')
+      setDeleteErrorMessage(readApiErrorMessage(error))
     } finally {
       setDeleteSubmitting(false)
     }

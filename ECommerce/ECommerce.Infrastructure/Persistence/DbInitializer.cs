@@ -39,6 +39,7 @@ namespace ECommerce.Infrastructure.Persistence
                 await BrandSeeder.SeedAsync(context);
                 await ScentFamilySeeder.SeedAsync(context);
                 await ProductSeeder.SeedAsync(context);
+                await PaymentMethodSeeder.SeedAsync(context);
                 
             }
             catch (Exception ex)

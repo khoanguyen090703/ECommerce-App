@@ -19,7 +19,10 @@ namespace ECommerce.Application.Mappings
                 StockQuantity = v.StockQuantity,
                 Status = v.Status.ToString(),
                 SoldQuantity = v.SoldQuantity,
-                ImageUrls = v.Images.Select(i => i.Url).ToList()
+                ImageUrls = v.Images.OrderBy(i => i.Id).Select(i => i.Url).ToList(),
+                IsDefault = v.IsDefault,
+                CreatedDate = v.CreatedDate,
+                UpdatedDate = v.UpdatedDate
             };
         }
 

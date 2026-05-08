@@ -7,6 +7,7 @@ using ECommerce.Infrastructure.Persistence.Extensions;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace ECommerce.Infrastructure.Persistence.Repositories
@@ -56,29 +57,59 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
         public async Task<PagedResult<Product>> GetAsync(ProductQueryParams parameters)
         {
             var query = _context.Products
-                //.Include (p => p.Category)
-                .Include (p => p.Images)
+                .Include(p => p.Images)
                 .Include(p => p.Categories)
-                .Include(p => p.ProductVariants)
+                .Include(p => p.ScentFamilies)
+                .Include(p => p.Brand)
+                .Include(p => p.ProductVariants).ThenInclude(v => v.Images)
                 .Include(p => p.Reviews)
-                .AsNoTracking().AsQueryable();
+                .AsNoTracking()
+                .AsQueryable();
 
-            // Search and Filter
             if (!string.IsNullOrWhiteSpace(parameters.SearchTerm))
             {
-                query = query.Where(x => x.Name.Contains(parameters.SearchTerm));
+                var term = parameters.SearchTerm.Trim();
+                query = query.Where(x =>
+                    x.Name.Contains(term)
+                    || (x.Description != null && x.Description.Contains(term)));
             }
 
-            // Sort
+            if (parameters.Status.HasValue)
+            {
+                query = query.Where(p => p.Status == parameters.Status.Value);
+            }
+
+            if (parameters.BrandId is > 0)
+            {
+                query = query.Where(p => p.Brand != null && p.Brand.Id == parameters.BrandId.Value);
+            }
+
+            if (parameters.CategoryId is > 0)
+            {
+                query = query.Where(p => p.Categories.Any(c => c.Id == parameters.CategoryId.Value));
+            }
+
+            if (parameters.ScentFamilyId is > 0)
+            {
+                query = query.Where(p => p.ScentFamilies.Any(sf => sf.Id == parameters.ScentFamilyId.Value));
+            }
+
             query = parameters.SortBy switch
             {
+                "name" => query.OrderBy(p => p.Name),
                 "name_desc" => query.OrderByDescending(p => p.Name),
-                _ => query.OrderBy(x => x.Id)
+                "id" => query.OrderBy(p => p.Id),
+                "id_desc" => query.OrderByDescending(p => p.Id),
+                "created" => query.OrderBy(p => p.CreatedDate),
+                "created_desc" => query.OrderByDescending(p => p.CreatedDate),
+                "updated" => query.OrderBy(p => p.UpdatedDate ?? p.CreatedDate),
+                "updated_desc" => query.OrderByDescending(p => p.UpdatedDate ?? p.CreatedDate),
+                "status" => query.OrderBy(p => p.Status),
+                "status_desc" => query.OrderByDescending(p => p.Status),
+                _ => query.OrderByDescending(p => p.Id)
             };
 
-            // Return with pagination
-            return await
-                query.ToPagedListAsync(parameters.PageNumber, parameters.PageSize);
+            return await query.ToPagedListAsync(parameters.PageNumber, parameters.PageSize);
         }
 
         public async Task<PagedResult<ProductVariant>> GetVariantsAsync(ECommerce.Domain.QueryParameters.VariantQueryParams parameters)
@@ -141,15 +172,62 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
             return await query.ToPagedListAsync(parameters.PageNumber, parameters.PageSize);
         }
 
-        public async Task<Product?> GetByIdAsync(int id)
+        public async Task<bool> ExistsAsync(int id)
         {
-            var product = await _context.Products
-                //.Include (p => p.Category)
-                .Include (p => p.Images)
+            return await _context.Products.AsNoTracking().AnyAsync(p => p.Id == id);
+        }
+
+        public async Task<PagedResult<ProductVariant>> GetVariantsByProductIdAsync(int productId, ProductVariantsQueryParams parameters)
+        {
+            var query = _context.ProductVariants
+                .AsNoTracking()
+                .Include(v => v.Images)
+                .Where(v => v.Product.Id == productId);
+
+            if (!string.IsNullOrWhiteSpace(parameters.SearchTerm))
+            {
+                var term = parameters.SearchTerm.Trim();
+                query = query.Where(v => v.Name.Contains(term));
+            }
+
+            query = parameters.SortBy switch
+            {
+                "name" => query.OrderBy(v => v.Name),
+                "name_desc" => query.OrderByDescending(v => v.Name),
+                "id" => query.OrderBy(v => v.Id),
+                "id_desc" => query.OrderByDescending(v => v.Id),
+                "price" => query.OrderBy(v => v.Price),
+                "price_desc" => query.OrderByDescending(v => v.Price),
+                "stock" => query.OrderBy(v => v.StockQuantity),
+                "stock_desc" => query.OrderByDescending(v => v.StockQuantity),
+                "created" => query.OrderBy(v => v.CreatedDate),
+                "created_desc" => query.OrderByDescending(v => v.CreatedDate),
+                "status" => query.OrderBy(v => v.Status),
+                "status_desc" => query.OrderByDescending(v => v.Status),
+                "sold" => query.OrderBy(v => v.SoldQuantity),
+                "sold_desc" => query.OrderByDescending(v => v.SoldQuantity),
+                _ => query.OrderBy(v => v.Id)
+            };
+
+            return await query.ToPagedListAsync(parameters.PageNumber, parameters.PageSize);
+        }
+
+        public async Task<Product?> GetByIdAsync(int id, bool includeProductVariants = true)
+        {
+            IQueryable<Product> query = _context.Products
+                .Include(p => p.Images)
+                .Include(p => p.Brand)
                 .Include(p => p.Categories)
-                .Include(p => p.ProductVariants).ThenInclude(pv => pv.Images)
-                .Include(p => p.Reviews).ThenInclude(r => r.ReviewResponses)
-                .SingleOrDefaultAsync(p => p.Id == id);
+                .Include(p => p.ScentFamilies);
+
+            if (includeProductVariants)
+            {
+                query = query.Include(p => p.ProductVariants).ThenInclude(pv => pv.Images);
+            }
+
+            query = query.Include(p => p.Reviews).ThenInclude(r => r.ReviewResponses);
+
+            var product = await query.SingleOrDefaultAsync(p => p.Id == id);
             return product;
         }
 
@@ -198,9 +276,12 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task<bool> IsNameExistedAsync(string name)
+        public async Task<bool> IsNameExistedAsync(string name, int? excludeProductId = null)
         {
-            return await _context.Products.AnyAsync(p => p.Name == name);
+            var query = _context.Products.AsQueryable().Where(p => p.Name == name);
+            if (excludeProductId is > 0)
+                query = query.Where(p => p.Id != excludeProductId.Value);
+            return await query.AnyAsync();
         }
 
         public async Task UpdateAsync(Product product)

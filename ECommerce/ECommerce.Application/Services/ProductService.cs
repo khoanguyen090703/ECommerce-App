@@ -154,14 +154,29 @@ namespace ECommerce.Application.Services
             return products.Select(p => p.ToListResponse()).ToList();
         }
 
-        public async Task<ProductDetailsResponse?> GetProductByIdAsync(int id)
+        public async Task<ProductDetailsResponse?> GetProductByIdAsync(int id, bool includeVariants = true)
         {
-            var product = await _productRepository.GetByIdAsync(id);
+            var product = await _productRepository.GetByIdAsync(id, includeProductVariants: includeVariants);
             if (product == null)
                 throw new NotFoundException($"Product with id {id} not found.");
 
-            // Map using mappings
-            return product.ToDetailsResponse();
+            var response = product.ToDetailsResponse();
+            if (!includeVariants)
+            {
+                response.Variants = new List<ProductVariantResponse>();
+            }
+
+            return response;
+        }
+
+        public async Task<PagedResult<ProductVariantResponse>> GetProductVariantsByProductIdAsync(int productId, ProductVariantsQueryParams parameters)
+        {
+            if (!await _productRepository.ExistsAsync(productId))
+                throw new NotFoundException($"Product with id {productId} not found.");
+
+            var paged = await _productRepository.GetVariantsByProductIdAsync(productId, parameters);
+            var mapped = paged.Items.Select(v => v.ToResponse()).ToList();
+            return new PagedResult<ProductVariantResponse>(mapped, paged.TotalCount, paged.PageNumber, paged.PageSize);
         }
 
         public async Task<VariantDetails4Cus?> GetProductWithVariantsByVariantIdAsync(int variantId)
@@ -219,24 +234,33 @@ namespace ECommerce.Application.Services
                 categories.Add(cat);
             }
 
-            // Update allowed fields only (do not modify TotalReviews, AverageRating, Status, ProductVariants, Reviews)
-            var previousName = product.Name;
+            // Validate scent families
+            var scentFamilies = new List<ScentFamily>();
+            foreach (var sfid in request.ScentFamilyIds)
+            {
+                var sf = await _scentFamilyRepository.GetByIdAsync(sfid);
+                if (sf == null)
+                    throw new NotFoundException($"Scent family with id {sfid} not found in update product.");
+                scentFamilies.Add(sf);
+            }
 
+            // Update allowed fields only (do not modify TotalReviews, AverageRating, Status, ProductVariants, Reviews)
             product.Description = request.Description;
             product.Brand = brand;
             product.Line = request.Line ?? product.Line;
             product.ReleaseYear = request.ReleaseYear;
             product.Concentration = request.Concentration;
 
-            // If name changed, ensure uniqueness and update variant names accordingly
-            if (!string.Equals(previousName, request.Name, StringComparison.OrdinalIgnoreCase))
+            var newName = NameGenerators.GenerateProductName(brand.Name, product.Line, product.Concentration);
+            var previousName = product.Name;
+
+            if (!string.Equals(previousName, newName, StringComparison.Ordinal))
             {
-                if (await _productRepository.IsNameExistedAsync(request.Name))
-                    throw new ConflictException($"Product with name '{request.Name}' already exists.");
+                if (await _productRepository.IsNameExistedAsync(newName, id))
+                    throw new ConflictException($"Product with name '{newName}' already exists.");
 
-                product.Name = request.Name;
+                product.Name = newName;
 
-                // Update variant names based on new product name
                 foreach (var pv in product.ProductVariants)
                 {
                     pv.Name = NameGenerators.GenerateVariantName(product.Name, pv.Format, pv.Volumn, pv.Unit);
@@ -250,9 +274,12 @@ namespace ECommerce.Application.Services
                 product.Categories.Add(c);
             }
 
-            // Image update is possible but currently disabled. To enable images replacement,
-            // uncomment the block below.
-            /*
+            product.ScentFamilies.Clear();
+            foreach (var sf in scentFamilies)
+            {
+                product.ScentFamilies.Add(sf);
+            }
+
             // Replace product images
             product.Images.Clear();
             var newImages = request.Images.Select(u => new ProductImage { Url = u }).ToList();
@@ -260,7 +287,7 @@ namespace ECommerce.Application.Services
             {
                 product.Images.Add(img);
             }
-            */
+
 
             await _productRepository.UpdateAsync(product);
         }

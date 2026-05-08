@@ -15,11 +15,14 @@ namespace ECommerce.Application
         public static IServiceCollection AddApplication(this IServiceCollection services)
         {
             services.AddScoped<IProductService, ProductService>();
+            services.AddScoped<ICustomerService, CustomerService>();
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<IBrandService, BrandService>();
             services.AddScoped<IVariantService, VariantService>();
             services.AddScoped<IScentFamilyService, ScentFamilyService>();
             services.AddScoped<IImageService, ImageService>();
+            services.AddScoped<ICartService, CartService>();
+            services.AddScoped<IOrderService, OrderService>();
 
             // Register validators
             services.AddTransient<FluentValidation.IValidator<UpdateVariantRequest>, UpdateVariantRequestValidator>();

@@ -1,8 +1,6 @@
 using ECommerce.Domain.Enums;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace ECommerce.SharedViewModels.DTOs.Response
 {
@@ -27,5 +25,7 @@ namespace ECommerce.SharedViewModels.DTOs.Response
         public DateTime CreatedDate { get; set; }
 
         public DateTime? UpdatedDate { get; set; }
+
+        public List<ProductVariantListItemResponse> Variants { get; set; } = new List<ProductVariantListItemResponse>();
     }
 }

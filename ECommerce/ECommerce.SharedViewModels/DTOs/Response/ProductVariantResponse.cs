@@ -14,5 +14,11 @@ namespace ECommerce.SharedViewModels.DTOs.Response
         public string Status { get; set; } = default!;
         public int SoldQuantity { get; set; }
         public List<string> ImageUrls { get; set; } = new List<string>();
+
+        public bool IsDefault { get; set; }
+
+        public DateTime CreatedDate { get; set; }
+
+        public DateTime? UpdatedDate { get; set; }
     }
 }

@@ -8,8 +8,6 @@ namespace ECommerce.SharedViewModels.DTOs.Request
 {
     public class UpdateProductRequest
     {
-        public string Name { get; set; } = default!;
-
         public string Description { get; set; } = default!;
 
         public List<string> Images { get; set; } = new List<string>();
@@ -17,6 +15,8 @@ namespace ECommerce.SharedViewModels.DTOs.Request
         public int BrandId { get; set; }
 
         public List<int> CategoryIds { get; set; } = new List<int>();
+
+        public List<int> ScentFamilyIds { get; set; } = new List<int>();
 
         public string? Line { get; set; }
 

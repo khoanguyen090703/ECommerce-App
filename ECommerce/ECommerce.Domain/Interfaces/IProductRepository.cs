@@ -13,14 +13,19 @@ namespace ECommerce.Domain.Interfaces
 
         Task AddAsync(Product product);
 
-        Task<Product?> GetByIdAsync(int id);
+        Task<Product?> GetByIdAsync(int id, bool includeProductVariants = true);
+
+        Task<bool> ExistsAsync(int id);
+
+        Task<PagedResult<ProductVariant>> GetVariantsByProductIdAsync(int productId, ProductVariantsQueryParams parameters);
 
         Task UpdateAsync(Product product);
 
         Task DeleteAsync(Product product);
 
         Task<PagedResult<Product>> GetAsync(ProductQueryParams parameters);
-        Task<bool> IsNameExistedAsync(string name);
+        /// <param name="excludeProductId">When set, a product with this id is ignored (for updates).</param>
+        Task<bool> IsNameExistedAsync(string name, int? excludeProductId = null);
         Task<PagedResult<ProductVariant>> GetVariantsAsync(ECommerce.Domain.QueryParameters.VariantQueryParams parameters);
         Task<ProductVariant?> GetVariantByIdAsync(int id);
         Task<ProductVariant?> GetVariantByIdForUpdateAsync(int id);

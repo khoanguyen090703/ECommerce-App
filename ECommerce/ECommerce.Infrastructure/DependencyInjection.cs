@@ -1,5 +1,6 @@
 ﻿using ECommerce.Application.Common.Interfaces;
 using ECommerce.Application.Interfaces;
+using ECommerce.Application.Services;
 using ECommerce.Domain.Interfaces;
 using ECommerce.Infrastructure.Identity;
 using ECommerce.Infrastructure.Persistence;
@@ -124,6 +125,16 @@ namespace ECommerce.Infrastructure
             services.AddScoped<IBrandRepository, BrandRepository>();
             services.AddScoped<IScentFamilyRepository, ScentFamilyRepository>();
             services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
+            services.AddScoped<ICartRepository, CartRepository>();
+            services.AddScoped<ICartItemRepository, CartItemRepository>();
+            services.AddScoped<IOrderRepository, OrderRepository>();
+            services.AddScoped<IPaymentMethodRepository, PaymentMethodRepository>();
+            services.AddScoped<IPaymentRepository, PaymentRepository>();
+            services.AddScoped<IOrderService, OrderService>();
+            services.AddScoped<IOrderRepository, OrderRepository>();
+            // Application services
+            services.AddScoped<IPaymentMethodService, PaymentMethodService>();
+            // Register application layer validators and services if needed
             // Register variant/variant service is via product repository; no separate repo
 
             return services;

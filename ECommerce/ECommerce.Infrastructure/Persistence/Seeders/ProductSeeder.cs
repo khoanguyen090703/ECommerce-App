@@ -19,7 +19,7 @@ namespace ECommerce.Infrastructure.Persistence.Seeders
                     new {
                         Name = "Bleu de Chanel EDP",
                         Description = "Hương thơm gỗ nồng nàn, mang lại vẻ ngoài sang trọng, lịch lãm và đầy bí ẩn cho phái mạnh.",
-                        Image = "https://orchard.vn/wp-content/uploads/2025/01/bleu-de-chanel-edp-100ml.webp",
+                        Image = "https://fimgs.net/mdimg/perfume-thumbs/dark-375x500.25967.avif",
                         BrandId = 2,
                         CategoryIds = new[] { 1 },
                         Line = "Bleu de Chanel",
@@ -33,7 +33,7 @@ namespace ECommerce.Infrastructure.Persistence.Seeders
                     new {
                         Name = "Creed Aventus",
                         Description = "Tôn vinh sức mạnh, tầm nhìn và sự thành công. Mùi hương trái cây hoàng gia vô cùng cuốn hút.",
-                        Image = "https://orchard.vn/wp-content/uploads/2025/01/creed-aventus-edp-100ml.webp",
+                        Image = "https://fimgs.net/mdimg/perfume-thumbs/dark-375x500.9828.avif",
                         BrandId = 15,
                         CategoryIds = new[] { 3, 4 },
                         Line = "Aventus",
@@ -47,7 +47,7 @@ namespace ECommerce.Infrastructure.Persistence.Seeders
                     new {
                         Name = "Tom Ford Oud Wood",
                         Description = "Hương gỗ trầm hương quý hiếm, mang đến vẻ đẹp bí ẩn, gợi cảm và vô cùng quyền lực.",
-                        Image = "https://orchard.vn/wp-content/uploads/2025/01/tom-ford-oud-wood-50ml.webp",
+                        Image = "https://fimgs.net/mdimg/perfume-thumbs/dark-375x500.1826.avif",
                         BrandId = 8,
                         CategoryIds = new[] { 2 },
                         Line = "Private Blend",
@@ -61,7 +61,7 @@ namespace ECommerce.Infrastructure.Persistence.Seeders
                     new {
                         Name = "YSL Y EDP",
                         Description = "Sự pha trộn tinh tế giữa sự tươi mát của táo xanh và chiều sâu của gỗ sồi, đại diện cho người đàn ông tự tin.",
-                        Image = "https://orchard.vn/wp-content/uploads/2025/01/ysl-y-edp-100ml.webp",
+                        Image = "https://fimgs.net/mdimg/perfume-thumbs/dark-375x500.79243.avif",
                         BrandId = 5,
                         CategoryIds = new[] { 1 },
                         Line = "Y",
@@ -75,7 +75,7 @@ namespace ECommerce.Infrastructure.Persistence.Seeders
                     new {
                         Name = "Versace Eros EDT",
                         Description = "Tình yêu, đam mê và khao khát được thể hiện qua hương thơm phương Đông tươi mát và bạc hà sảng khoái.",
-                        Image = "https://orchard.vn/wp-content/uploads/2025/01/versace-eros-edt-100ml.webp",
+                        Image = "https://fimgs.net/mdimg/perfume-thumbs/dark-375x500.16657.avif",
                         BrandId = 12,
                         CategoryIds = new[] { 1, 2 },
                         Line = "Eros",
@@ -89,7 +89,7 @@ namespace ECommerce.Infrastructure.Persistence.Seeders
                     new {
                         Name = "Acqua di Gio Profumo",
                         Description = "Sự hòa quyện giữa hương biển cả thanh mát và sự gai góc của đá núi lửa, mãnh liệt và nam tính.",
-                        Image = "https://orchard.vn/wp-content/uploads/2025/01/acqua-di-gio-profumo-75ml.webp",
+                        Image = "https://fimgs.net/mdimg/perfume-thumbs/dark-375x500.29727.avif",
                         BrandId = 3,
                         CategoryIds = new[] { 1 },
                         Line = "Acqua di Gio",
@@ -103,7 +103,7 @@ namespace ECommerce.Infrastructure.Persistence.Seeders
                     new {
                         Name = "Jo Malone Wood Sage & Sea Salt",
                         Description = "Mang theo không khí biển trong lành hòa quyện cùng vị muối khoáng và nét ấm áp của gỗ xô thơm.",
-                        Image = "https://orchard.vn/wp-content/uploads/2025/01/jo-malone-wood-sage-100ml.webp",
+                        Image = "https://fimgs.net/mdimg/perfume-thumbs/dark-375x500.25529.avif",
                         BrandId = 20,
                         CategoryIds = new[] { 2, 4 },
                         Line = "Cologne",
@@ -117,7 +117,7 @@ namespace ECommerce.Infrastructure.Persistence.Seeders
                     new {
                         Name = "Le Labo Santal 33",
                         Description = "Biểu tượng của sự cá tính và độc bản. Hương gỗ đàn hương, bạch đậu khấu và da thuộc đặc trưng khó quên.",
-                        Image = "https://orchard.vn/wp-content/uploads/2025/01/le-labo-santal-33-50ml.webp",
+                        Image = "https://fimgs.net/mdimg/perfume-thumbs/dark-375x500.12201.avif",
                         BrandId = 25,
                         CategoryIds = new[] { 2, 3 },
                         Line = "Classic Collection",

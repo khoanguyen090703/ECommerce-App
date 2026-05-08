@@ -29,5 +29,7 @@ namespace ECommerce.Domain.Entities
         public Product Product { get; set; } = default!;
 
         public ICollection<VariantImage> Images { get; set; } = new List<VariantImage>();
+
+        public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     }
 }

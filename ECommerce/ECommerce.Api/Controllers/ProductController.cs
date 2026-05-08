@@ -33,13 +33,23 @@ namespace ECommerce.Api.Controllers
             return Created();
         }
 
+        /// <param name="includeVariants">When false, <c>variants</c> in the response is empty; load variants via <c>GET .../variants</c> instead.</param>
         [HttpGet("{id:int:min(1)}")]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> GetById(int id, [FromQuery] bool includeVariants = true)
         {
             if (id <= 0)
                 return BadRequest("Invalid product id.");
-            var products = await _productService.GetProductByIdAsync(id);
+            var products = await _productService.GetProductByIdAsync(id, includeVariants);
             return Ok(products);
+        }
+
+        [HttpGet("{productId:int:min(1)}/variants")]
+        public async Task<IActionResult> GetProductVariants(int productId, [FromQuery] ProductVariantsQueryParams parameters)
+        {
+            if (productId <= 0)
+                return BadRequest("Invalid product id.");
+            var paged = await _productService.GetProductVariantsByProductIdAsync(productId, parameters);
+            return Ok(paged);
         }
 
         [HttpGet("variant/{variantId:int:min(1)}")]

@@ -30,5 +30,20 @@ namespace ECommerce.SharedViewModels.DTOs.Response
         public DateTime CreatedDate { get; set; }
 
         public DateTime? UpdatedDate { get; set; }
+
+        /// <summary>Admin: brand for update form.</summary>
+        public int BrandId { get; set; }
+
+        public string BrandName { get; set; } = default!;
+
+        public string Line { get; set; } = default!;
+
+        public int? ReleaseYear { get; set; }
+
+        public string Concentration { get; set; } = default!;
+
+        public List<int> CategoryIds { get; set; } = new List<int>();
+
+        public List<int> ScentFamilyIds { get; set; } = new List<int>();
     }
 }

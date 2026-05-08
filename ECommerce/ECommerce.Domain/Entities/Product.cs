@@ -26,7 +26,7 @@ namespace ECommerce.Domain.Entities
 
         public double AverageRating { get; set; } = default;
 
-        public ProductStatus Status { get; set; } = ProductStatus.Draft;
+        public ProductStatus Status { get; set; } = ProductStatus.Active;
 
         public bool IsFeatured { get; set; } = false;
 

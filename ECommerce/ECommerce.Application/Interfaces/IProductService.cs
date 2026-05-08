@@ -14,7 +14,9 @@ namespace ECommerce.Application.Interfaces
 
         Task AddAsync(CreateProductRequest request);
 
-        Task<ProductDetailsResponse?> GetProductByIdAsync(int id);
+        Task<ProductDetailsResponse?> GetProductByIdAsync(int id, bool includeVariants = true);
+
+        Task<PagedResult<ProductVariantResponse>> GetProductVariantsByProductIdAsync(int productId, ProductVariantsQueryParams parameters);
 
         Task<VariantDetails4Cus?> GetProductWithVariantsByVariantIdAsync(int variantId);
 

@@ -16,5 +16,7 @@ namespace ECommerce.Domain.Entities
         public Guid IdentityId { get; set; }
 
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
+
+        public ICollection<Order> Orders { get; set; } = new List<Order>();
     }
 }
