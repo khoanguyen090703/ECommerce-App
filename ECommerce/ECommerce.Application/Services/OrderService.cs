@@ -139,13 +139,19 @@ namespace ECommerce.Application.Services
             var selectedItems = new List<CartItem>();
 
             var subTotal = 0m;
+            var variantCache = new Dictionary<int, ProductVariant>();
 
             foreach (var requestedItem in requestedItems)
             {
-                var productVariant = await _productVariantRepository.GetByIdAsync(requestedItem.ProductVariantId);
-                if (productVariant == null)
+                if (!variantCache.TryGetValue(requestedItem.ProductVariantId, out var productVariant))
                 {
-                    throw new ArgumentException("Invalid product variant.");
+                    productVariant = await _productVariantRepository.GetByIdAsync(requestedItem.ProductVariantId);
+                    if (productVariant == null)
+                    {
+                        throw new ArgumentException("Invalid product variant.");
+                    }
+
+                    variantCache[requestedItem.ProductVariantId] = productVariant;
                 }
 
                 // check variant stock quantity and status
@@ -170,6 +176,12 @@ namespace ECommerce.Application.Services
                 newOrderItems.Add(newOrderItem);
 
                 subTotal += newOrderItem.TotalPrice;
+
+                productVariant.StockQuantity -= requestedItem.Quantity;
+                if (productVariant.StockQuantity == 0)
+                {
+                    productVariant.Status = VariantStatus.OutOfStock;
+                }
 
                 // Find selected cart items to remove after order created
                 var selectedCartItem = cart.CartItems.FirstOrDefault(ci => ci.ProductVariant.Id == requestedItem.ProductVariantId);

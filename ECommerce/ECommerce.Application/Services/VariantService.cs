@@ -3,6 +3,7 @@ using ECommerce.Application.Interfaces;
 using ECommerce.Domain.Common;
 using ECommerce.Domain.QueryParameters;
 using ECommerce.Domain.Interfaces;
+using ECommerce.Domain.Enums;
 using ECommerce.Application.Mappings;
 using System.Collections.Generic;
 using System.Linq;
@@ -107,6 +108,18 @@ namespace ECommerce.Application.Services
             variant.Unit = request.Unit;
             variant.Price = request.Price;
             variant.StockQuantity = request.StockQuantity;
+
+            if (variant.Status != VariantStatus.Discontinued)
+            {
+                if (variant.StockQuantity == 0)
+                {
+                    variant.Status = VariantStatus.OutOfStock;
+                }
+                else if (variant.Status == VariantStatus.OutOfStock)
+                {
+                    variant.Status = VariantStatus.Available;
+                }
+            }
 
             // Update name based on product name
             variant.Name = NameGenerators.GenerateVariantName(product.Name, variant.Format, variant.Volumn, variant.Unit);
