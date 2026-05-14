@@ -1,6 +1,7 @@
 using ECommerce.Application.Exceptions;
 using ECommerce.Domain.Common;
 using ECommerce.Domain.Entities;
+using ECommerce.Domain.Enums;
 using ECommerce.Domain.Interfaces;
 using ECommerce.Domain.QueryParameters;
 using ECommerce.Infrastructure.Persistence.Extensions;
@@ -125,28 +126,36 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
             // Only include variants whose parent product is Active
             query = query.Where(v => v.Product.Status == ECommerce.Domain.Enums.ProductStatus.Active);
 
+            query = query.Where(v => v.Status == VariantStatus.Available);
+
             // Search term on variant name
             if (!string.IsNullOrWhiteSpace(parameters.SearchTerm))
             {
                 query = query.Where(v => v.Name.Contains(parameters.SearchTerm));
             }
 
-            // Filter by scent family
+            // Filter by scent family (exact match, case-insensitive)
             if (!string.IsNullOrWhiteSpace(parameters.ScentFamily))
             {
-                query = query.Where(v => v.Product.ScentFamilies.Any(sf => sf.Name.Contains(parameters.ScentFamily)));
+                var scentFamilyFilter = parameters.ScentFamily.Trim();
+                query = query.Where(v => v.Product.ScentFamilies.Any(sf =>
+                    sf.Name.ToLower() == scentFamilyFilter.ToLower()));
             }
 
-            // Filter by category
+            // Filter by category (exact match, case-insensitive)
             if (!string.IsNullOrWhiteSpace(parameters.Category))
             {
-                query = query.Where(v => v.Product.Categories.Any(c => c.Name.Contains(parameters.Category)));
+                var categoryFilter = parameters.Category.Trim();
+                query = query.Where(v => v.Product.Categories.Any(c =>
+                    c.Name.ToLower() == categoryFilter.ToLower()));
             }
-            
-            // Filter by brand
+
+            // Filter by brand (exact match, case-insensitive)
             if (!string.IsNullOrWhiteSpace(parameters.Brand))
             {
-                query = query.Where(v => v.Product.Brand != null && v.Product.Brand.Name.Contains(parameters.Brand));
+                var brandFilter = parameters.Brand.Trim();
+                query = query.Where(v => v.Product.Brand != null
+                    && v.Product.Brand.Name.ToLower() == brandFilter.ToLower());
             }
 
             // Filter by price range
@@ -172,6 +181,38 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
             return await query.ToPagedListAsync(parameters.PageNumber, parameters.PageSize);
         }
 
+        public async Task<PagedResult<ProductVariant>> GetVariantsForRestockListingAsync(RestockVariantQueryParams parameters)
+        {
+            var query = _context.ProductVariants
+                .AsNoTracking()
+                .Include(v => v.Images)
+                .Include(v => v.Product)
+                .Where(v => v.Status == VariantStatus.Available || v.Status == VariantStatus.OutOfStock);
+
+            if (parameters.Status.HasValue)
+                query = query.Where(v => v.Status == parameters.Status.Value);
+
+            if (!string.IsNullOrWhiteSpace(parameters.SearchTerm))
+            {
+                var term = parameters.SearchTerm.Trim();
+                query = query.Where(v => v.Name.Contains(term) || v.Product.Name.Contains(term));
+            }
+
+            query = parameters.SortBy switch
+            {
+                "name" => query.OrderBy(v => v.Name),
+                "name_desc" => query.OrderByDescending(v => v.Name),
+                "stock" => query.OrderBy(v => v.StockQuantity),
+                "stock_desc" => query.OrderByDescending(v => v.StockQuantity),
+                "status" => query.OrderBy(v => v.Status),
+                "status_desc" => query.OrderByDescending(v => v.Status),
+                "id_desc" => query.OrderByDescending(v => v.Id),
+                _ => query.OrderBy(v => v.Id)
+            };
+
+            return await query.ToPagedListAsync(parameters.PageNumber, parameters.PageSize);
+        }
+
         public async Task<bool> ExistsAsync(int id)
         {
             return await _context.Products.AsNoTracking().AnyAsync(p => p.Id == id);
@@ -183,6 +224,9 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
                 .AsNoTracking()
                 .Include(v => v.Images)
                 .Where(v => v.Product.Id == productId);
+
+            if (!parameters.IncludeAllStatuses)
+                query = query.Where(v => v.Status == VariantStatus.Available);
 
             if (!string.IsNullOrWhiteSpace(parameters.SearchTerm))
             {
@@ -303,26 +347,23 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
 
         public async Task<List<ProductVariant>> GetFeaturedDefaultVariantsAsync()
         {
-            var variants = await _context.Products
-                .Where(p => p.IsFeatured && p.Status == ECommerce.Domain.Enums.ProductStatus.Active)
-                .SelectMany(p => p.ProductVariants)
-                .Where(v => v.IsDefault)
+            return await _context.ProductVariants
+                .AsNoTracking()
                 .Include(v => v.Images)
+                .Where(v => v.IsDefault
+                    && v.Status == VariantStatus.Available
+                    && v.Product.IsFeatured
+                    && v.Product.Status == ECommerce.Domain.Enums.ProductStatus.Active)
                 .ToListAsync();
-
-            return variants;
         }
 
         public async Task<List<ProductVariant>> GetVariantsOfProductByIdAsync(int id)
         {
-            var variants = await _context.Products
-                .Include(v => v.ProductVariants).ThenInclude(pv => pv.Images)
+            return await _context.ProductVariants
                 .AsNoTracking()
-                .Where(v => v.Id == id)
-                .SelectMany(p => p.ProductVariants) 
+                .Include(pv => pv.Images)
+                .Where(pv => pv.Product.Id == id && pv.Status == VariantStatus.Available)
                 .ToListAsync();
-
-            return variants;
         }
     }
 }

@@ -25,6 +25,9 @@
                     </div>
                     <div class="text-end">
                         <span id="orderStatusBadge" class="badge bg-dark">Unknown</span>
+                        <div id="orderCancelWrap" class="mt-2 d-none">
+                            <button type="button" class="btn btn-sm btn-outline-danger" id="btnCancelOrder">Hủy đơn</button>
+                        </div>
                     </div>
                 </div>
 
@@ -46,6 +49,36 @@
                         <div id="shippingAddress" class="fw-semibold">—</div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-3">
+            <div class="card-body p-3 p-md-4">
+                <h2 class="h6 mb-3">Thời gian đơn hàng</h2>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="small text-muted">Ngày đặt</div>
+                        <div id="orderPlacedDate" class="fw-semibold">—</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="small text-muted">Ngày hoàn tất</div>
+                        <div id="orderCompletedDate" class="fw-semibold">—</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="small text-muted">Ngày hủy</div>
+                        <div id="orderCancelledDate" class="fw-semibold">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="orderPayAgainWrap" class="card shadow-sm border-warning d-none mb-3">
+            <div class="card-body p-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div class="small">
+                    <span class="fw-semibold">Thanh toán trực tuyến</span>
+                    <span class="text-muted d-block">Đơn hàng chưa thanh toán xong. Bạn có thể mở lại cổng thanh toán.</span>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" id="btnPayOrderAgain">Thanh toán lại</button>
             </div>
         </div>
 
@@ -90,10 +123,17 @@
                 phoneNumber: document.getElementById('phoneNumber'),
                 paymentStatus: document.getElementById('paymentStatus'),
                 shippingAddress: document.getElementById('shippingAddress'),
+                orderPlacedDate: document.getElementById('orderPlacedDate'),
+                orderCompletedDate: document.getElementById('orderCompletedDate'),
+                orderCancelledDate: document.getElementById('orderCancelledDate'),
                 orderItemsWrap: document.getElementById('orderItemsWrap'),
                 subTotalValue: document.getElementById('subTotalValue'),
                 shippingFeeValue: document.getElementById('shippingFeeValue'),
-                totalAmountValue: document.getElementById('totalAmountValue')
+                totalAmountValue: document.getElementById('totalAmountValue'),
+                payAgainWrap: document.getElementById('orderPayAgainWrap'),
+                payAgainBtn: document.getElementById('btnPayOrderAgain'),
+                cancelWrap: document.getElementById('orderCancelWrap'),
+                cancelBtn: document.getElementById('btnCancelOrder')
             };
 
             function show(el, yes) {
@@ -125,18 +165,16 @@
                     case 'processing': return 'bg-info text-dark';
                     case 'shipping': return 'bg-primary';
                     case 'delivered': return 'bg-success';
-                    case 'completed': return 'bg-success';
                     case 'cancelled': return 'bg-danger';
-                    case 'returned': return 'bg-secondary';
                     default: return 'bg-dark';
                 }
             }
 
-            async function fetchJson(url) {
-                const response = await fetch(url, {
+            async function fetchJson(url, options) {
+                const response = await fetch(url, Object.assign({
                     credentials: 'same-origin',
                     headers: { 'Accept': 'application/json' }
-                });
+                }, options || {}));
 
                 const text = await response.text();
                 let data = null;
@@ -192,6 +230,8 @@
                 const phoneNumber = order?.phoneNumber ?? order?.PhoneNumber ?? '—';
                 const shippingAddress = order?.shippingAddress ?? order?.ShippingAddress ?? '—';
                 const orderDate = order?.orderDate ?? order?.OrderDate;
+                const completedDate = order?.completedDate ?? order?.CompletedDate;
+                const cancelledDate = order?.cancelledDate ?? order?.CancelledDate;
                 const orderItems = order?.orderItems ?? order?.OrderItems ?? [];
                 const subTotal = Number(order?.subTotal ?? order?.SubTotal ?? 0) || 0;
                 const shippingFee = Number(order?.shippingFee ?? order?.ShippingFee ?? 0) || 0;
@@ -205,9 +245,62 @@
                 els.phoneNumber.textContent = phoneNumber;
                 els.paymentStatus.textContent = paymentStatus;
                 els.shippingAddress.textContent = shippingAddress;
+                if (els.orderPlacedDate) els.orderPlacedDate.textContent = formatDate(orderDate);
+                if (els.orderCompletedDate) els.orderCompletedDate.textContent = formatDate(completedDate);
+                if (els.orderCancelledDate) els.orderCancelledDate.textContent = formatDate(cancelledDate);
                 els.subTotalValue.textContent = formatVnd(subTotal);
                 els.shippingFeeValue.textContent = formatVnd(shippingFee);
                 els.totalAmountValue.textContent = formatVnd(totalAmount);
+
+                const canPay = !!(order?.canRetryOnlinePayment ?? order?.CanRetryOnlinePayment);
+                if (els.payAgainWrap) els.payAgainWrap.classList.toggle('d-none', !canPay);
+                if (els.payAgainBtn) {
+                    els.payAgainBtn.onclick = null;
+                    if (canPay) {
+                        els.payAgainBtn.onclick = async function () {
+                            els.payAgainBtn.disabled = true;
+                            try {
+                                const checkout = await fetchJson('/api/payments/stripe/orders/' + id + '/retry', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                                    body: '{}'
+                                });
+                                const url = checkout.checkoutUrl ?? checkout.CheckoutUrl;
+                                if (url) window.location.href = url;
+                                else window.alert('Không nhận được liên kết thanh toán.');
+                            } catch (e) {
+                                const msg = e?.data?.message || e?.message || 'Không tạo được phiên thanh toán.';
+                                window.alert(msg);
+                            } finally {
+                                els.payAgainBtn.disabled = false;
+                            }
+                        };
+                    }
+                }
+
+                const canCancel = String(status).toLowerCase() === 'pending';
+                if (els.cancelWrap) els.cancelWrap.classList.toggle('d-none', !canCancel);
+                if (els.cancelBtn) {
+                    els.cancelBtn.onclick = null;
+                    if (canCancel) {
+                        els.cancelBtn.onclick = async function () {
+                                    const confirmed = typeof window.confirmInModal === 'function'
+                                        ? await window.confirmInModal('Bạn có chắc muốn hủy đơn hàng này?')
+                                        : false;
+                                    if (!confirmed) return;
+                            els.cancelBtn.disabled = true;
+                            try {
+                                const updated = await fetchJson('/api/orders/' + id + '/cancel', { method: 'POST' });
+                                renderDetails(updated);
+                            } catch (e) {
+                                const msg = e?.data?.message || e?.data?.title || e?.message || 'Không hủy được đơn hàng.';
+                                window.alert(msg);
+                            } finally {
+                                els.cancelBtn.disabled = false;
+                            }
+                        };
+                    }
+                }
 
                 els.orderItemsWrap.innerHTML = '';
                 if (!orderItems.length) {

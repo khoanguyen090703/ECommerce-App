@@ -99,8 +99,8 @@ export function CustomersPage() {
     <div className="customers-page categories-page">
       <header className="categories-page-header">
         <div className="categories-page-header-left">
-          <span className="eyebrow">ECommerce Admin</span>
-          <h1 className="categories-title">Customers</h1>
+          <span className="eyebrow">Bảng quản trị</span>
+          <h1 className="categories-title">Khách hàng</h1>
         </div>
         <div className="categories-page-header-right">
           <div className="categories-toolbar">
@@ -158,7 +158,7 @@ export function CustomersPage() {
             <table className="categories-table">
               <thead>
                 <tr>
-                  <th scope="col">Avatar</th>
+                  <th scope="col">Ảnh đại diện</th>
                   <th scope="col">Họ tên</th>
                   <th scope="col">Email</th>
                   <th scope="col">Địa chỉ</th>

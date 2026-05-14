@@ -1,5 +1,7 @@
 using ECommerce.Application.Interfaces;
 using ECommerce.Domain.QueryParameters;
+using ECommerce.SharedViewModels.DTOs.Request;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ECommerce.Api.Controllers
@@ -31,6 +33,15 @@ namespace ECommerce.Api.Controllers
             return Ok(items);
         }
 
+        /// <summary>List variants with status Available or OutOfStock (paging, search, optional status filter).</summary>
+        [HttpGet("restock")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetRestockVariants([FromQuery] RestockVariantQueryParams parameters)
+        {
+            var paged = await _variantService.GetVariantsForStockRestockAsync(parameters);
+            return Ok(paged);
+        }
+
         [HttpGet]
         public async Task<IActionResult> Get([FromQuery] VariantQueryParams parameters)
         {
@@ -48,6 +59,17 @@ namespace ECommerce.Api.Controllers
             if (dto == null)
                 return NotFound();
 
+            return Ok(dto);
+        }
+
+        /// <summary>Basic variant info for restock UI (same shape as list rows).</summary>
+        [HttpGet("{id:int:min(1)}/restock")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetRestockVariantById(int id)
+        {
+            var dto = await _variantService.GetVariantStockPanelByIdAsync(id);
+            if (dto == null)
+                return NotFound();
             return Ok(dto);
         }
 
@@ -79,6 +101,16 @@ namespace ECommerce.Api.Controllers
             await _variantService.SetFeaturedVariantsAsync(variantIds);
             return NoContent();
         }
+
+        /// <summary>Add stock to multiple variants (quantities are summed onto current stock).</summary>
+        [HttpPost("restock")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> PostRestock([FromBody] AddVariantStockBatchRequest request)
+        {
+            await _variantService.AddStockToVariantsAsync(request);
+            return NoContent();
+        }
+
         [HttpPatch("{id:int:min(1)}/status")]
         public async Task<IActionResult> UpdateStatus(int id, [FromBody] ECommerce.SharedViewModels.DTOs.Request.UpdateVariantStatusRequest request)
         {

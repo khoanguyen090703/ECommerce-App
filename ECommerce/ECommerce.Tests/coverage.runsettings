@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Coverlet (XPlat), pham vi coverage:
+
+  Include assembly:
+    ECommerce.Api (toan bo),
+    ECommerce.Application (toan bo, tru file bi ExcludeByFile),
+    ECommerce.Infrastructure CHI type AuthService (namespace ECommerce.Infrastructure.Identity).
+
+  Exclude assembly: ECommerce.Tests, ECommerce.Domain, ECommerce.SharedViewModels
+  (cac project khac: Web, v.v. khong co trong Include nen khong tinh coverage).
+
+  ExcludeByFile:
+    Application: thu muc Mappings, Validators.
+    Infrastructure: Persistence, Services, Migrations, DependencyInjection, Mappings,
+    Identity/AppUser.cs (chi giu AuthService.cs).
+    Api: SecurityRequirementsOperationFilter.cs.
+    Application: DependencyInjection.cs (Infrastructure DI da co trong exclude tren).
+
+  Khong dat [ECommerce.Infrastructure]* vao Exclude (se loai ca AuthService).
+-->
+<RunSettings>
+  <RunConfiguration>
+    <ResultsDirectory>./TestResults</ResultsDirectory>
+  </RunConfiguration>
+
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura,opencover</Format>
+
+          <Include>[ECommerce.Api]*,[ECommerce.Application]*,[ECommerce.Infrastructure]ECommerce.Infrastructure.Identity.AuthService*</Include>
+
+          <Exclude>[ECommerce.Tests]*,[ECommerce.Domain]*,[ECommerce.SharedViewModels]*</Exclude>
+
+          <ExcludeByFile>**/Program.cs,**/WeatherForecast*.cs,**/ECommerce.Api/Filters/SecurityRequirementsOperationFilter.cs,**/ECommerce.Application/DependencyInjection.cs,**/ECommerce.Application/Mappings/**/*.cs,**/ECommerce.Application/Validators/**/*.cs,**/ECommerce.Infrastructure/Persistence/**/*.cs,**/ECommerce.Infrastructure/Services/**/*.cs,**/ECommerce.Infrastructure/Migrations/**/*.cs,**/ECommerce.Infrastructure/DependencyInjection.cs,**/ECommerce.Infrastructure/Mappings/**/*.cs,**/ECommerce.Infrastructure/Identity/AppUser.cs,**/ECommerce.Application.Exceptions/ValidationExceptionHandler.cs</ExcludeByFile>
+
+          <ExcludeByAttribute>GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
+
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+          <SkipAutoProps>true</SkipAutoProps>
+          <SingleHit>false</SingleHit>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

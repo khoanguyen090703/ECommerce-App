@@ -5,20 +5,43 @@
 }
 
 <div class="container py-5">
-    <div class="mx-auto" style="max-width: 680px;">
-        <div class="card shadow-sm border-0">
-            <div class="card-body p-4 p-md-5 text-center">
-                <div class="mb-3" style="font-size: 3rem; line-height: 1;">✅</div>
-                <h1 class="h3 mb-2">Đặt hàng thành công</h1>
-                <p class="text-muted mb-4">
-                    Cảm ơn bạn đã mua hàng tại Aura Mystique. Đơn hàng của bạn đã được ghi nhận.
-                </p>
+    <div class="mx-auto" style="max-width: 640px;">
+        @if (!string.IsNullOrEmpty(Model.PageError) && Model.OrderId is not int)
+        {
+            <div class="alert alert-warning" role="alert">@Model.PageError</div>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-primary" asp-page="/Orders/Index">Đơn hàng của tôi</a>
+                <a class="btn btn-outline-secondary" asp-page="/Index">Về trang chủ</a>
+            </div>
+        }
+        else if (Model.OrderId is int orderId)
+        {
+            @if (!string.IsNullOrEmpty(Model.PageError))
+            {
+                <div class="alert alert-info small" role="status">@Model.PageError</div>
+            }
 
-                <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
-                    <a class="btn btn-primary" asp-page="/Index">Về trang chủ</a>
-                    <a class="btn btn-outline-secondary" asp-page="/Orders/Index">Chi tiết đơn hàng</a>
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4 p-md-5 text-center">
+                    <div class="mb-3" style="font-size: 3rem; line-height: 1;">✅</div>
+                    <h1 class="h4 mb-2">Đặt hàng thành công</h1>
+                    <p class="text-muted mb-2">
+                        Đơn hàng <strong>#@orderId</strong>
+                        @if (Model.TotalAmount is decimal total)
+                        {
+                            <span> — Tổng @total.ToString("N0") ₫</span>
+                        }
+                    </p>
+                    <p class="small text-muted mb-4">
+                        Cảm ơn bạn đã mua hàng tại Aura Mystique. Đơn COD sẽ được xử lý và giao theo thông tin đã cung cấp.
+                    </p>
+                    <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+                        <a class="btn btn-primary" asp-page="/Orders/Details" asp-route-id="@orderId">Xem chi tiết đơn hàng</a>
+                        <a class="btn btn-outline-secondary" asp-page="/Orders/Index">Đơn hàng của tôi</a>
+                        <a class="btn btn-outline-secondary" asp-page="/Index">Về trang chủ</a>
+                    </div>
                 </div>
             </div>
-        </div>
+        }
     </div>
 </div>

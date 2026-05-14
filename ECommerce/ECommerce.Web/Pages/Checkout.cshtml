@@ -581,13 +581,44 @@
                 };
 
                 try {
-                    await fetchJson('/api/orders', {
+                    const created = await fetchJson('/api/orders', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                         body: JSON.stringify(payload)
                     });
 
                     window.refreshCartItemCount?.();
+
+                    const orderId = created?.orderId ?? created?.OrderId;
+                    const requiresOnline = !!(created?.requiresOnlinePayment ?? created?.RequiresOnlinePayment);
+
+                    if (requiresOnline && orderId) {
+                        try {
+                            await fetch('/api/auth/refresh-session', {
+                                method: 'POST',
+                                credentials: 'same-origin'
+                            });
+                        } catch {
+                            // Best-effort refresh before leaving for Stripe.
+                        }
+
+                        const checkout = await fetchJson('/api/payments/stripe/checkout', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                            body: JSON.stringify({ orderId: orderId })
+                        });
+                        const payUrl = checkout?.checkoutUrl ?? checkout?.CheckoutUrl;
+                        if (payUrl) {
+                            window.location.href = payUrl;
+                            return;
+                        }
+                    }
+
+                    if (orderId) {
+                        window.location.href = '/order-success?orderId=' + encodeURIComponent(String(orderId));
+                        return;
+                    }
+
                     window.location.href = '@Url.Content("~/order-success")';
                 } catch (e) {
                     const msg =

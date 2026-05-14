@@ -20,5 +20,7 @@ namespace ECommerce.SharedViewModels.DTOs.Response
         public DateTime OrderDate { get; set; }
 
         public DateTime? CompletedDate { get; set; }
+
+        public DateTime? CancelledDate { get; set; }
     }
 }

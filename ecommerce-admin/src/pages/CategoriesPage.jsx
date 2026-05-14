@@ -683,8 +683,8 @@ export function CategoriesPage() {
 
       <header className="categories-page-header">
         <div className="categories-page-header-left">
-          <span className="eyebrow">ECommerce Admin</span>
-          <h1 className="categories-title">Categories</h1>
+          <span className="eyebrow">Bảng quản trị</span>
+          <h1 className="categories-title">Danh mục</h1>
         </div>
         <div className="categories-page-header-right">
           <button type="button" className="btn-primary categories-add-btn" onClick={openCreateModal}>
@@ -730,7 +730,7 @@ export function CategoriesPage() {
             <table className="categories-table">
               <thead>
                 <tr>
-                  <SortableTh label="Id" columnKey="id" currentSort={sortBy} onSort={handleSort} />
+                  <SortableTh label="Mã" columnKey="id" currentSort={sortBy} onSort={handleSort} />
                   <th scope="col">Ảnh</th>
                   <SortableTh label="Tên" columnKey="name" currentSort={sortBy} onSort={handleSort} />
                   <th scope="col">Mô tả</th>

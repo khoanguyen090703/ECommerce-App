@@ -1,10 +1,4 @@
-﻿using ECommerce.Domain.Entities;
-using ECommerce.Domain.Enums;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace ECommerce.SharedViewModels.DTOs.Response
+﻿namespace ECommerce.SharedViewModels.DTOs.Response
 {
     public class OrderDetailsResponse
     {
@@ -18,6 +12,8 @@ namespace ECommerce.SharedViewModels.DTOs.Response
 
         public string PaymentStatus { get; set; } = default!;
 
+        public bool CanRetryOnlinePayment { get; set; }
+
         public string RecipientName { get; set; } = default!;
 
         public string ShippingAddress { get; set; } = default!;
@@ -30,6 +26,10 @@ namespace ECommerce.SharedViewModels.DTOs.Response
 
         public DateTime? CompletedDate { get; set; }
 
+        public DateTime? CancelledDate { get; set; }
+
         public List<Item4MyOrderResponse> OrderItems { get; set; } = new List<Item4MyOrderResponse>();
+
+        public OrderPaymentDetailsResponse? Payment { get; set; }
     }
 }

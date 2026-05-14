@@ -1,5 +1,4 @@
 using System.IdentityModel.Tokens.Jwt;
-using System.Net.Http.Json;
 using ECommerce.SharedViewModels.DTOs.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -11,53 +10,32 @@ public static class JwtCookieRefreshEvents
     public static async Task HandleAuthenticationFailedAsync(AuthenticationFailedContext context)
     {
         if (context.Exception is not SecurityTokenExpiredException)
-        {
             return;
-        }
 
         var httpContext = context.HttpContext;
-        var path = httpContext.Request.Path;
-        if (IsAuthenticationPage(path))
-        {
+        if (IsAuthenticationPage(httpContext.Request.Path))
             return;
-        }
 
         var authSessionManager = httpContext.RequestServices.GetRequiredService<IAuthSessionManager>();
+        var refreshed = await AuthTokenRefresher.TryRefreshAsync(httpContext, httpContext.RequestAborted);
+        if (!refreshed)
+        {
+            authSessionManager.ClearTokens(httpContext);
+            RedirectToSignIn(context);
+            return;
+        }
+
         var accessToken = authSessionManager.GetAccessToken(httpContext);
-        var refreshToken = authSessionManager.GetRefreshToken(httpContext);
-
-        if (string.IsNullOrWhiteSpace(accessToken) || string.IsNullOrWhiteSpace(refreshToken))
+        if (string.IsNullOrWhiteSpace(accessToken))
         {
             authSessionManager.ClearTokens(httpContext);
             RedirectToSignIn(context);
             return;
         }
-
-        var clientFactory = httpContext.RequestServices.GetRequiredService<IHttpClientFactory>();
-        var client = clientFactory.CreateClient("ApiAnonymous");
-
-        using var response = await client.PostAsJsonAsync(
-            "api/auth/refresh-token",
-            new RefreshTokenRequest
-            {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken
-            },
-            httpContext.RequestAborted);
-
-        var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>(cancellationToken: httpContext.RequestAborted);
-        if (!response.IsSuccessStatusCode || authResponse?.IsSuccess != true || string.IsNullOrWhiteSpace(authResponse.Token) || string.IsNullOrWhiteSpace(authResponse.RefreshToken))
-        {
-            authSessionManager.ClearTokens(httpContext);
-            RedirectToSignIn(context);
-            return;
-        }
-
-        authSessionManager.UpdateTokens(httpContext, authResponse.Token, authResponse.RefreshToken);
 
         var tokenValidationParameters = CloneValidationParameters(context.Options.TokenValidationParameters);
         var tokenHandler = new JwtSecurityTokenHandler();
-        var principal = tokenHandler.ValidateToken(authResponse.Token, tokenValidationParameters, out _);
+        var principal = tokenHandler.ValidateToken(accessToken, tokenValidationParameters, out _);
 
         context.Principal = principal;
         context.Success();
@@ -86,7 +64,7 @@ public static class JwtCookieRefreshEvents
     private static void RedirectToSignIn(AuthenticationFailedContext context)
     {
         context.NoResult();
-        context.Response.Redirect("/Auth/SignIn");
+        context.Response.Redirect(AuthReturnUrl.BuildSignInUrl(context.Request));
     }
 
     private static bool IsAuthenticationPage(PathString path)

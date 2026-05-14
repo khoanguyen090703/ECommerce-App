@@ -36,7 +36,7 @@ public sealed class AuthSessionManager : IAuthSessionManager
         {
             HttpOnly = true,
             Secure = context.Request.IsHttps,
-            SameSite = SameSiteMode.Strict,
+            SameSite = SameSiteMode.Lax,
             Expires = DateTimeOffset.UtcNow.AddYears(-1)
         };
 
@@ -63,7 +63,7 @@ public sealed class AuthSessionManager : IAuthSessionManager
     {
         HttpOnly = true,
         Secure = context.Request.IsHttps,
-        SameSite = SameSiteMode.Strict,
+        SameSite = SameSiteMode.Lax,
         Expires = DateTimeOffset.UtcNow.AddHours(1)
     };
 
@@ -71,7 +71,7 @@ public sealed class AuthSessionManager : IAuthSessionManager
     {
         HttpOnly = true,
         Secure = context.Request.IsHttps,
-        SameSite = SameSiteMode.Strict,
+        SameSite = SameSiteMode.Lax,
         Expires = DateTimeOffset.UtcNow.AddDays(7)
     };
 }

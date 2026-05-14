@@ -1,5 +1,6 @@
 using ECommerce.SharedViewModels.DTOs.Response;
 using ECommerce.Domain.Entities;
+using ECommerce.Domain.Enums;
 using System.Linq;
 
 namespace ECommerce.Application.Mappings
@@ -20,7 +21,7 @@ namespace ECommerce.Application.Mappings
                 TotalReviews = p.TotalReviews,
                 AverageRating = p.AverageRating,
                 Reviews = p.Reviews.Select(r => r.ToDetailsResponse()).ToList(),
-                ProductVariants = p.ProductVariants.Select(v => new ProductVariantInProductResponse
+                ProductVariants = p.ProductVariants.Where(v => v.Status == VariantStatus.Available).Select(v => new ProductVariantInProductResponse
                 {
                     Id = v.Id,
                     Format = v.Format.ToString(),

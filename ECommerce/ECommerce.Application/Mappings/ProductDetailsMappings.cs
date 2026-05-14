@@ -1,4 +1,5 @@
 using ECommerce.SharedViewModels.DTOs.Response;
+using ECommerce.Domain.Enums;
 using ECommerce.Domain.Entities;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,7 +18,10 @@ namespace ECommerce.Application.Mappings
                 ImageUrls = product.Images.Select(i => i.Url).ToList(),
                 ScentFamilies = string.Join(", ", product.ScentFamilies.Select(s => s.Name)),
                 Categories = string.Join(", ", product.Categories.Select(c => c.Name)),
-                Variants = product.ProductVariants?.Select(v => v.ToResponse()).ToList() ?? new List<ProductVariantResponse>(),
+                Variants = product.ProductVariants?
+                    .Where(v => v.Status == VariantStatus.Available)
+                    .Select(v => v.ToResponse())
+                    .ToList() ?? new List<ProductVariantResponse>(),
                 Reviews = product.Reviews.Select(r => r.ToDetailsResponse()).ToList(),
                 TotalReviews = product.TotalReviews,
                 AverageRating = product.AverageRating,

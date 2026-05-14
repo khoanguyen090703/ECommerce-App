@@ -1,8 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { apiClient, readApiErrorMessage } from '../lib/api'
+import {
+  canAdminCancelOrder,
+  orderPaymentStatusLabelVi,
+  orderStatusLabelVi,
+} from '../lib/orderLabels'
 
-const ORDER_STATUSES = ['Pending', 'Processing', 'Shipping', 'Delivered', 'Completed', 'Cancelled', 'Returned']
+const ORDER_STATUSES = ['Pending', 'Processing', 'Shipping', 'Delivered', 'Cancelled']
 
 const ORDER_SORT_OPTIONS = [
   { value: 'orderdate_desc', label: 'Ngày đặt mới nhất' },
@@ -12,6 +17,14 @@ const ORDER_SORT_OPTIONS = [
   { value: 'status', label: 'Trạng thái A-Z' },
   { value: 'status_desc', label: 'Trạng thái Z-A' },
 ]
+
+function IconEllipsisVertical() {
+  return (
+    <svg className="action-menu-trigger-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" />
+    </svg>
+  )
+}
 
 async function fetchOrders({ pageNumber, pageSize, sortBy, status }) {
   const params = new URLSearchParams()
@@ -46,9 +59,7 @@ function statusClass(status) {
     case 'processing': return 'orders-status-badge orders-status-badge--processing'
     case 'shipping': return 'orders-status-badge orders-status-badge--shipping'
     case 'delivered': return 'orders-status-badge orders-status-badge--delivered'
-    case 'completed': return 'orders-status-badge orders-status-badge--completed'
     case 'cancelled': return 'orders-status-badge orders-status-badge--cancelled'
-    case 'returned': return 'orders-status-badge orders-status-badge--returned'
     default: return 'orders-status-badge'
   }
 }
@@ -61,6 +72,12 @@ export function OrdersPage() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [listVersion, setListVersion] = useState(0)
+  const [actionMenu, setActionMenu] = useState(null)
+  const [actionSubmitting, setActionSubmitting] = useState(false)
+  const [cancelConfirmOrderId, setCancelConfirmOrderId] = useState(null)
+  const actionMenuPopoverRef = useRef(null)
+  const actionMenuTriggerElRef = useRef(null)
 
   useEffect(() => {
     let cancelled = false
@@ -85,17 +102,105 @@ export function OrdersPage() {
       }
     })()
     return () => { cancelled = true }
-  }, [pageNumber, pageSize, sortBy, statusFilter])
+  }, [pageNumber, pageSize, sortBy, statusFilter, listVersion])
+
+  useEffect(() => {
+    if (!actionMenu) return undefined
+    function handleDocMouseDown(e) {
+      if (actionMenuPopoverRef.current?.contains(e.target)) return
+      if (actionMenuTriggerElRef.current?.contains(e.target)) return
+      setActionMenu(null)
+      actionMenuTriggerElRef.current = null
+    }
+    document.addEventListener('mousedown', handleDocMouseDown)
+    return () => document.removeEventListener('mousedown', handleDocMouseDown)
+  }, [actionMenu])
+
+  useEffect(() => {
+    if (!actionMenu) return undefined
+    function closeMenu() {
+      setActionMenu(null)
+      actionMenuTriggerElRef.current = null
+    }
+    window.addEventListener('scroll', closeMenu, true)
+    window.addEventListener('resize', closeMenu)
+    return () => {
+      window.removeEventListener('scroll', closeMenu, true)
+      window.removeEventListener('resize', closeMenu)
+    }
+  }, [actionMenu])
+
+  function toggleActionMenu(e, row) {
+    e.stopPropagation()
+    const rect = e.currentTarget.getBoundingClientRect()
+    setActionMenu((prev) => {
+      if (prev?.row.id === row.id) {
+        actionMenuTriggerElRef.current = null
+        return null
+      }
+      actionMenuTriggerElRef.current = e.currentTarget
+      return { row, rect }
+    })
+  }
+
+  async function executeCancel() {
+    if (!cancelConfirmOrderId) return
+    setActionSubmitting(true)
+    try {
+      await apiClient.patch(`/api/orders/${cancelConfirmOrderId}/status`, { status: 'Cancelled' })
+      setCancelConfirmOrderId(null)
+      setListVersion((v) => v + 1)
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : readApiErrorMessage(e))
+    } finally {
+      setActionSubmitting(false)
+    }
+  }
+
+  function requestCancel(orderId) {
+    setActionMenu(null)
+    actionMenuTriggerElRef.current = null
+    setCancelConfirmOrderId(orderId)
+  }
 
   const items = data?.items ?? []
   const totalPages = data?.totalPages ?? 0
 
   return (
     <div className="orders-page categories-page">
+      {cancelConfirmOrderId && (
+        <div
+          className="confirm-backdrop"
+          role="presentation"
+          onClick={() => !actionSubmitting && setCancelConfirmOrderId(null)}
+        >
+          <div
+            className="confirm-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="cancel-order-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="cancel-order-title" className="confirm-dialog-title">Xác nhận hủy đơn</h2>
+            <p className="confirm-dialog-body">
+              Bạn có chắc muốn hủy đơn hàng <strong>#{cancelConfirmOrderId}</strong>?
+            </p>
+            <div className="confirm-dialog-actions">
+              <button type="button" className="btn-secondary" disabled={actionSubmitting} onClick={() => setCancelConfirmOrderId(null)}>
+                Không
+              </button>
+              <button type="button" className="btn-danger" disabled={actionSubmitting} onClick={() => void executeCancel()}>
+                {actionSubmitting ? 'Đang hủy…' : 'Hủy đơn'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="categories-page-header">
         <div className="categories-page-header-left">
-          <span className="eyebrow">ECommerce Admin</span>
-          <h1 className="categories-title">Orders</h1>
+          <span className="eyebrow">Bảng quản trị</span>
+          <h1 className="categories-title">Đơn hàng</h1>
         </div>
         <div className="categories-page-header-right">
           <div className="categories-toolbar">
@@ -149,7 +254,7 @@ export function OrdersPage() {
                   setPageNumber(1)
                 }}
               >
-                {status}
+                {orderStatusLabelVi(status)}
               </button>
             ))}
           </div>
@@ -165,14 +270,14 @@ export function OrdersPage() {
             <table className="categories-table">
               <thead>
                 <tr>
-                  <th scope="col">Id</th>
+                  <th scope="col">Mã</th>
                   <th scope="col">Người nhận</th>
                   <th scope="col">Trạng thái</th>
                   <th scope="col">Thanh toán</th>
                   <th scope="col">Tổng tiền</th>
                   <th scope="col">Ngày đặt</th>
                   <th scope="col">Ngày hoàn tất</th>
-                  <th scope="col" className="th-actions">Chi tiết</th>
+                  <th scope="col" className="th-actions">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -188,16 +293,25 @@ export function OrdersPage() {
                       <td className="td-numeric">{row.id}</td>
                       <td className="td-strong">{row.recipientName || '—'}</td>
                       <td>
-                        <span className={statusClass(row.status)}>{row.status || '—'}</span>
+                        <span className={statusClass(row.status)}>{orderStatusLabelVi(row.status)}</span>
                       </td>
-                      <td className="td-muted">{row.paymentStatus || '—'}</td>
+                      <td className="td-muted">{orderPaymentStatusLabelVi(row.paymentStatus)}</td>
                       <td className="td-nowrap">{formatCurrency(row.totalAmount)}</td>
                       <td className="td-nowrap">{formatDate(row.orderDate)}</td>
                       <td className="td-nowrap">{formatDate(row.completedDate)}</td>
                       <td className="td-actions">
-                        <Link className="btn-secondary orders-view-btn" to={`/orders/${row.id}`}>
-                          Xem
-                        </Link>
+                        <div className="action-menu">
+                          <button
+                            type="button"
+                            className="action-menu-trigger"
+                            aria-label="Mở thao tác"
+                            aria-expanded={actionMenu?.row.id === row.id}
+                            aria-haspopup="menu"
+                            onClick={(e) => toggleActionMenu(e, row)}
+                          >
+                            <IconEllipsisVertical />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -231,6 +345,45 @@ export function OrdersPage() {
           </footer>
         )}
       </div>
+
+      {actionMenu && (
+        <ul
+          ref={actionMenuPopoverRef}
+          className="action-menu-popover"
+          role="menu"
+          style={{
+            top: actionMenu.rect.bottom + 6,
+            right: document.documentElement.clientWidth - actionMenu.rect.right,
+          }}
+        >
+          <li role="none">
+            <Link
+              to={`/orders/${actionMenu.row.id}`}
+              className="action-menu-item"
+              role="menuitem"
+              onClick={() => {
+                setActionMenu(null)
+                actionMenuTriggerElRef.current = null
+              }}
+            >
+              <span>Xem chi tiết</span>
+            </Link>
+          </li>
+          {canAdminCancelOrder(actionMenu.row.status) && (
+            <li role="none">
+              <button
+                type="button"
+                className="action-menu-item action-menu-item--danger"
+                role="menuitem"
+                disabled={actionSubmitting}
+                onClick={() => requestCancel(actionMenu.row.id)}
+              >
+                <span>Hủy đơn</span>
+              </button>
+            </li>
+          )}
+        </ul>
+      )}
     </div>
   )
 }

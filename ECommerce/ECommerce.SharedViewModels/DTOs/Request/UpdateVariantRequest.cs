@@ -15,8 +15,6 @@ namespace ECommerce.SharedViewModels.DTOs.Request
 
         public decimal Price { get; set; }
 
-        public int StockQuantity { get; set; } = 1;
-
         public List<string> ImageUrls { get; set; } = new List<string>();
     }
 }

@@ -10,10 +10,12 @@ namespace ECommerce.Application.Interfaces
 {
     public interface IOrderService
     {
-        Task CreateOrderAsync(CreateOrderRequest request);
+        Task<CreateOrderResponse> CreateOrderAsync(CreateOrderRequest request);
         Task<CheckoutInfoResponse> GetCheckoutInfoAsync();
         Task<PagedResult<MyOrderResponse>> GetMyOrdersAsync(OrderQueryParams parameters);
         Task<PagedResult<OrderResponse>> GetOrdersAsync(OrderQueryParams parameters);
         Task<OrderDetailsResponse> GetOrderDetailsAsync(int id);
+        Task<OrderDetailsResponse> CancelMyOrderAsync(int id, CancellationToken cancellationToken = default);
+        Task<OrderDetailsResponse> UpdateOrderStatusAsync(int id, UpdateOrderStatusRequest request, CancellationToken cancellationToken = default);
     }
 }

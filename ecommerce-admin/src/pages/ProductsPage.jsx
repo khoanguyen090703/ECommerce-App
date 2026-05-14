@@ -3,6 +3,19 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { apiClient, readApiErrorMessage, resolveImageUrl } from '../lib/api'
 
 const PRODUCT_STATUSES = ['Draft', 'Active', 'Inactive', 'Archived']
+
+const PRODUCT_STATUS_VI = {
+  Draft: 'Bản nháp',
+  Active: 'Đang bán',
+  Inactive: 'Ngừng bán',
+  Archived: 'Lưu trữ',
+}
+
+const VARIANT_STATUS_VI = {
+  Available: 'Còn hàng',
+  OutOfStock: 'Hết hàng',
+  Discontinued: 'Ngừng kinh doanh',
+}
 async function fetchProducts({
   pageNumber,
   pageSize,
@@ -101,7 +114,14 @@ function formatDate(iso) {
 
 function statusLabel(s) {
   if (s == null) return '—'
-  return String(s)
+  const key = String(s)
+  return PRODUCT_STATUS_VI[key] ?? key
+}
+
+function variantStatusLabel(s) {
+  if (s == null) return '—'
+  const key = String(s)
+  return VARIANT_STATUS_VI[key] ?? key
 }
 
 export function ProductsPage() {
@@ -367,8 +387,8 @@ export function ProductsPage() {
 
       <header className="categories-page-header">
         <div className="categories-page-header-left">
-          <span className="eyebrow">ECommerce Admin</span>
-          <h1 className="categories-title">Products</h1>
+          <span className="eyebrow">Bảng quản trị</span>
+          <h1 className="categories-title">Sản phẩm</h1>
         </div>
         <div className="categories-page-header-right">
           <button type="button" className="btn-primary categories-add-btn" onClick={() => navigate('/products/new')}>
@@ -415,7 +435,7 @@ export function ProductsPage() {
                 <option value="">Tất cả</option>
                 {PRODUCT_STATUSES.map((s) => (
                   <option key={s} value={s}>
-                    {s}
+                    {PRODUCT_STATUS_VI[s] ?? s}
                   </option>
                 ))}
               </select>
@@ -485,7 +505,7 @@ export function ProductsPage() {
               <thead>
                 <tr>
                   <th scope="col" className="th-expand" aria-label="Mở rộng" />
-                  <SortableTh label="Id" columnKey="id" currentSort={sortBy} onSort={handleSort} />
+                  <SortableTh label="Mã" columnKey="id" currentSort={sortBy} onSort={handleSort} />
                   <th scope="col">Ảnh</th>
                   <SortableTh label="Tên" columnKey="name" currentSort={sortBy} onSort={handleSort} />
                   <th scope="col">Danh mục</th>
@@ -571,7 +591,7 @@ export function ProductsPage() {
                               <table className="product-variant-subtable">
                                 <thead>
                                   <tr>
-                                    <th>Id</th>
+                                    <th>Mã</th>
                                     <th>Ảnh</th>
                                     <th>Tên</th>
                                     <th>Giá</th>
@@ -589,7 +609,7 @@ export function ProductsPage() {
                                       <td className="td-strong">{v.name}</td>
                                       <td className="td-nowrap">{Number(v.price).toLocaleString('vi-VN')} ₫</td>
                                       <td className="td-numeric">{v.stockQuantity}</td>
-                                      <td>{v.status}</td>
+                                      <td>{variantStatusLabel(v.status)}</td>
                                     </tr>
                                   ))}
                                 </tbody>

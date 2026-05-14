@@ -26,10 +26,15 @@ namespace ECommerce.Domain.Entities
 
         public DateTime OrderDate { get; set; } = DateTime.UtcNow;
 
-        public DateTime? CompletedDate { get; set; } 
+        public DateTime? CompletedDate { get; set; }
+
+        public DateTime? CancelledDate { get; set; }
 
         public Customer Customer { get; set; }
 
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+
+        public ICollection<Payment> Payments { get; set; } = new List<Payment>();
     }
 }
+

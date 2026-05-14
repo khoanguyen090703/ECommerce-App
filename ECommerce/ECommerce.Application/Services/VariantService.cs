@@ -1,4 +1,5 @@
 using ECommerce.SharedViewModels.DTOs.Response;
+using ECommerce.SharedViewModels.DTOs.Request;
 using ECommerce.Application.Interfaces;
 using ECommerce.Domain.Common;
 using ECommerce.Domain.QueryParameters;
@@ -18,17 +19,20 @@ namespace ECommerce.Application.Services
         private readonly IProductVariantRepository _productVariantRepository;
         private readonly FluentValidation.IValidator<ECommerce.SharedViewModels.DTOs.Request.UpdateVariantRequest> _updateValidator;
         private readonly FluentValidation.IValidator<ECommerce.SharedViewModels.DTOs.Request.CreateVariantRequest> _createValidator;
+        private readonly FluentValidation.IValidator<AddVariantStockBatchRequest> _addStockBatchValidator;
 
         public VariantService(
             IProductRepository productRepository,
             IProductVariantRepository productVariantRepository,
             FluentValidation.IValidator<ECommerce.SharedViewModels.DTOs.Request.UpdateVariantRequest> updateValidator,
-            FluentValidation.IValidator<ECommerce.SharedViewModels.DTOs.Request.CreateVariantRequest> createValidator)
+            FluentValidation.IValidator<ECommerce.SharedViewModels.DTOs.Request.CreateVariantRequest> createValidator,
+            FluentValidation.IValidator<AddVariantStockBatchRequest> addStockBatchValidator)
         {
             _productRepository = productRepository;
             _productVariantRepository = productVariantRepository;
             _updateValidator = updateValidator;
             _createValidator = createValidator;
+            _addStockBatchValidator = addStockBatchValidator;
         }
 
         public async Task<List<VariantResponse>> GetAllVariantsAsync()
@@ -41,6 +45,9 @@ namespace ECommerce.Application.Services
         {
             var variant = await _productVariantRepository.GetByIdAsync(variantId);
             if (variant == null)
+                return null;
+
+            if (variant.Status != VariantStatus.Available)
                 return null;
 
             return variant.ToDetailsResponse();
@@ -107,7 +114,6 @@ namespace ECommerce.Application.Services
             variant.Volumn = request.Volumn;
             variant.Unit = request.Unit;
             variant.Price = request.Price;
-            variant.StockQuantity = request.StockQuantity;
 
             if (variant.Status != VariantStatus.Discontinued)
             {
@@ -145,20 +151,20 @@ namespace ECommerce.Application.Services
                 throw new ECommerce.Application.Exceptions.ConflictException($"Variant with id {variantId} is already {status}.");
 
             // 2. if current is Discontinued -> cannot update
-            if (variant.Status == ECommerce.Domain.Enums.VariantStatus.Discontinued)
+            if (variant.Status == VariantStatus.Discontinued)
                 throw new ECommerce.Application.Exceptions.ConflictException("Cannot update a discontinued variant.");
 
             // 3. If changing between Available and OutOfStock, validate stock quantity
-            if ((variant.Status == ECommerce.Domain.Enums.VariantStatus.Available && status == ECommerce.Domain.Enums.VariantStatus.OutOfStock) ||
-                (variant.Status == ECommerce.Domain.Enums.VariantStatus.OutOfStock && status == ECommerce.Domain.Enums.VariantStatus.Available) ||
-                (status == ECommerce.Domain.Enums.VariantStatus.OutOfStock) || (status == ECommerce.Domain.Enums.VariantStatus.Available))
+            if ((variant.Status == VariantStatus.Available && status == VariantStatus.OutOfStock) ||
+                (variant.Status == VariantStatus.OutOfStock && status == VariantStatus.Available) ||
+                (status == VariantStatus.OutOfStock) || (status == VariantStatus.Available))
             {
                 // When marking OutOfStock, ensure stock == 0
-                if (status == ECommerce.Domain.Enums.VariantStatus.OutOfStock && variant.StockQuantity > 0)
+                if (status == VariantStatus.OutOfStock && variant.StockQuantity > 0)
                     throw new ECommerce.Application.Exceptions.ConflictException("Cannot mark variant OutOfStock while stock quantity is greater than 0.");
 
                 // When marking Available, ensure stock > 0
-                if (status == ECommerce.Domain.Enums.VariantStatus.Available && variant.StockQuantity <= 0)
+                if (status == VariantStatus.Available && variant.StockQuantity <= 0)
                     throw new ECommerce.Application.Exceptions.ConflictException("Cannot mark variant Available while stock quantity is 0.");
             }
 
@@ -266,6 +272,62 @@ namespace ECommerce.Application.Services
                 throw new ECommerce.Application.Exceptions.ConflictException($"Variant with id {variantId} cannot be deleted because its product is not in draft status.");
 
             await _productVariantRepository.DeleteAsync(variant);
+        }
+
+        public async Task<PagedResult<VariantStockPanelResponse>> GetVariantsForStockRestockAsync(RestockVariantQueryParams parameters)
+        {
+            if (parameters.Status.HasValue
+                && parameters.Status.Value != VariantStatus.Available
+                && parameters.Status.Value != VariantStatus.OutOfStock)
+            {
+                throw new System.ArgumentException("Status filter must be Available or OutOfStock.");
+            }
+
+            var paged = await _productRepository.GetVariantsForRestockListingAsync(parameters);
+            var mapped = paged.Items.Select(v => v.ToVariantStockPanelResponse()).ToList();
+            return new PagedResult<VariantStockPanelResponse>(mapped, paged.TotalCount, paged.PageNumber, paged.PageSize);
+        }
+
+        public async Task<VariantStockPanelResponse?> GetVariantStockPanelByIdAsync(int variantId)
+        {
+            var variant = await _productRepository.GetVariantByIdAsync(variantId);
+            if (variant == null)
+                return null;
+
+            if (variant.Status != VariantStatus.Available && variant.Status != VariantStatus.OutOfStock)
+                return null;
+
+            return variant.ToVariantStockPanelResponse();
+        }
+
+        public async Task AddStockToVariantsAsync(AddVariantStockBatchRequest request)
+        {
+            await _addStockBatchValidator.ValidateAndThrowAsync(request);
+
+            var ids = request.Items.Select(i => i.VariantId).Distinct().ToList();
+            var variants = await _productVariantRepository.GetByIdsForUpdateAsync(ids);
+            if (variants.Count != ids.Count)
+            {
+                var missing = ids.Except(variants.Select(v => v.Id)).ToList();
+                throw new ECommerce.Application.Exceptions.NotFoundException($"Variants not found: {string.Join(", ", missing)}");
+            }
+
+            var byId = variants.ToDictionary(v => v.Id);
+            foreach (var item in request.Items)
+            {
+                var v = byId[item.VariantId];
+                if (v.Status == VariantStatus.Discontinued)
+                    throw new ECommerce.Application.Exceptions.ConflictException($"Variant {v.Id} is discontinued and cannot receive stock.");
+
+                v.StockQuantity += item.QuantityToAdd;
+
+                if (v.StockQuantity == 0)
+                    v.Status = VariantStatus.OutOfStock;
+                else if (v.Status == VariantStatus.OutOfStock)
+                    v.Status = VariantStatus.Available;
+            }
+
+            await _productVariantRepository.UpdateRangeAsync(variants);
         }
     }
 }

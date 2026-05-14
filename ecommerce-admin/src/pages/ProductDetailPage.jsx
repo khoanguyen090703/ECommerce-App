@@ -8,6 +8,19 @@ const VARIANT_FORMATS = [
   { value: 'Decant', label: 'Decant' },
 ]
 
+const PRODUCT_STATUS_VI = {
+  Draft: 'Bản nháp',
+  Active: 'Đang bán',
+  Inactive: 'Ngừng bán',
+  Archived: 'Lưu trữ',
+}
+
+const VARIANT_STATUS_VI = {
+  Available: 'Còn hàng',
+  OutOfStock: 'Hết hàng',
+  Discontinued: 'Ngừng kinh doanh',
+}
+
 const VARIANT_SORT_OPTIONS = [
   { value: 'id', label: 'Id ↑' },
   { value: 'id_desc', label: 'Id ↓' },
@@ -130,6 +143,38 @@ function formatDate(iso) {
   return d.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
 }
 
+function IconPauseCircle() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="currentColor">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 5h2v10h-2V7zm4 0h2v10h-2V7z" />
+    </svg>
+  )
+}
+
+function IconArchive() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="currentColor">
+      <path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10V10h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z" />
+    </svg>
+  )
+}
+
+function IconPlayCircle() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="currentColor">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l7 4.5-7 4.5z" />
+    </svg>
+  )
+}
+
+function IconBanProduct() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="currentColor">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-2.21 0-4.21-.9-5.66-2.34L16.66 7.34A7.95 7.95 0 0 1 20 12c0 4.42-3.58 8-8 8z" />
+    </svg>
+  )
+}
+
 export function ProductDetailPage() {
   const { productId } = useParams()
   const id = Number(productId)
@@ -174,6 +219,14 @@ export function ProductDetailPage() {
   const [deleteSubmitting, setDeleteSubmitting] = useState(false)
   const [deleteErr, setDeleteErr] = useState(null)
 
+  const [productStatusConfirm, setProductStatusConfirm] = useState(null)
+  const [productStatusSubmitting, setProductStatusSubmitting] = useState(false)
+  const [productStatusErr, setProductStatusErr] = useState(null)
+
+  const [variantDcConfirm, setVariantDcConfirm] = useState(null)
+  const [variantDcSubmitting, setVariantDcSubmitting] = useState(false)
+  const [variantDcErr, setVariantDcErr] = useState(null)
+
   const [toast, setToast] = useState(null)
   const toastT = useRef(0)
 
@@ -193,30 +246,30 @@ export function ProductDetailPage() {
     return () => window.clearTimeout(vSearchTimer.current)
   }, [vSearch])
 
+  const loadProduct = useCallback(async () => {
+    if (!Number.isFinite(id) || id < 1) return
+    setProductLoading(true)
+    setProductError(null)
+    try {
+      const res = await apiClient.get(`/api/products/${id}?includeVariants=false`)
+      setProduct(res.data)
+    } catch (e) {
+      setProductError(e instanceof Error ? e.message : 'Không tải được sản phẩm.')
+      setProduct(null)
+    } finally {
+      setProductLoading(false)
+    }
+  }, [id])
+
   useEffect(() => {
     if (!Number.isFinite(id) || id < 1) {
       setProductError('Id sản phẩm không hợp lệ.')
       setProductLoading(false)
+      setProduct(null)
       return
     }
-    let cancelled = false
-    void (async () => {
-      setProductLoading(true)
-      setProductError(null)
-      try {
-        const res = await apiClient.get(`/api/products/${id}?includeVariants=false`)
-        const data = res.data
-        if (!cancelled) setProduct(data)
-      } catch (e) {
-        if (!cancelled) setProductError(e instanceof Error ? e.message : 'Không tải được sản phẩm.')
-      } finally {
-        if (!cancelled) setProductLoading(false)
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [id])
+    void loadProduct()
+  }, [id, loadProduct])
 
   const loadVariants = useCallback(async () => {
     if (!Number.isFinite(id) || id < 1) return
@@ -227,6 +280,7 @@ export function ProductDetailPage() {
       params.set('pageNumber', String(vPage))
       params.set('pageSize', String(vPageSize))
       params.set('sortBy', vSort)
+      params.set('includeAllStatuses', 'true')
       if (vDebounced.trim()) params.set('searchTerm', vDebounced.trim())
       const res = await apiClient.get(`/api/products/${id}/variants?${params.toString()}`)
       setVariantsData(res.data)
@@ -344,7 +398,6 @@ export function ProductDetailPage() {
       volumn: String(v.volumn),
       unit: v.unit ?? 'ml',
       price: String(v.price),
-      stockQuantity: String(v.stockQuantity),
       existingImageUrls: (v.imageUrls ?? []).filter(Boolean),
       newImageFiles: [],
       newPreviewUrls: [],
@@ -411,11 +464,9 @@ export function ProductDetailPage() {
     if (!editVariant || !editForm) return
     const vol = Number(editForm.volumn)
     const price = Number(editForm.price)
-    const stock = Number(editForm.stockQuantity)
     const err = {}
     if (Number.isNaN(vol) || vol < 1 || vol > 200) err.volumn = 'Dung tích phải từ 1 đến 200.'
     if (Number.isNaN(price) || price < 0) err.price = 'Giá không hợp lệ.'
-    if (Number.isNaN(stock) || stock < 0) err.stock = 'Tồn không hợp lệ.'
     const totalImageCount = editForm.existingImageUrls.length + editForm.newImageFiles.length
     if (totalImageCount === 0) err.images = 'Ít nhất một ảnh.'
     if (totalImageCount > 4) err.images = 'Tối đa 4 ảnh.'
@@ -433,7 +484,6 @@ export function ProductDetailPage() {
         volumn: vol,
         unit: editForm.unit?.trim() || 'ml',
         price,
-        stockQuantity: stock,
         imageUrls,
       })
       editForm.newPreviewUrls.forEach((u) => URL.revokeObjectURL(u))
@@ -464,6 +514,39 @@ export function ProductDetailPage() {
     }
   }
 
+  async function executeProductStatusChange() {
+    if (!productStatusConfirm) return
+    setProductStatusSubmitting(true)
+    setProductStatusErr(null)
+    try {
+      await apiClient.patch(`/api/products/${id}/status`, { status: productStatusConfirm })
+      setProductStatusConfirm(null)
+      setToast('Đã cập nhật trạng thái sản phẩm.')
+      await loadProduct()
+      setListTick((t) => t + 1)
+    } catch (error) {
+      setProductStatusErr(readApiErrorMessage(error))
+    } finally {
+      setProductStatusSubmitting(false)
+    }
+  }
+
+  async function executeVariantDiscontinue() {
+    if (!variantDcConfirm) return
+    setVariantDcSubmitting(true)
+    setVariantDcErr(null)
+    try {
+      await apiClient.patch(`/api/variants/${variantDcConfirm.id}/status`, { status: 'Discontinued' })
+      setVariantDcConfirm(null)
+      setToast('Đã cập nhật biến thể sang Ngừng kinh doanh.')
+      setListTick((t) => t + 1)
+    } catch (error) {
+      setVariantDcErr(readApiErrorMessage(error))
+    } finally {
+      setVariantDcSubmitting(false)
+    }
+  }
+
   const vItems = variantsData?.items ?? []
   const vTotalPages = variantsData?.totalPages ?? 0
 
@@ -483,6 +566,80 @@ export function ProductDetailPage() {
       {toast && (
         <div className="toast" role="status">
           {toast}
+        </div>
+      )}
+
+      {productStatusConfirm && (
+        <div
+          className="confirm-backdrop confirm-backdrop--over-modal"
+          role="presentation"
+          onClick={() => {
+            if (productStatusSubmitting) return
+            setProductStatusConfirm(null)
+            setProductStatusErr(null)
+          }}
+        >
+          <div className="confirm-dialog" role="alertdialog" onClick={(e) => e.stopPropagation()}>
+            <h2 className="confirm-dialog-title">Xác nhận đổi trạng thái sản phẩm</h2>
+            <p className="confirm-dialog-body">
+              Chuyển <strong>{product?.name}</strong> sang trạng thái{' '}
+              <strong>{PRODUCT_STATUS_VI[productStatusConfirm] ?? productStatusConfirm}</strong>?
+            </p>
+            {productStatusErr && <p className="modal-form-error">{productStatusErr}</p>}
+            <div className="confirm-dialog-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={productStatusSubmitting}
+                onClick={() => {
+                  setProductStatusConfirm(null)
+                  setProductStatusErr(null)
+                }}
+              >
+                Hủy
+              </button>
+              <button type="button" className="btn-primary" disabled={productStatusSubmitting} onClick={() => void executeProductStatusChange()}>
+                {productStatusSubmitting ? 'Đang xử lý…' : 'Xác nhận'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {variantDcConfirm && (
+        <div
+          className="confirm-backdrop confirm-backdrop--over-modal"
+          role="presentation"
+          onClick={() => {
+            if (variantDcSubmitting) return
+            setVariantDcConfirm(null)
+            setVariantDcErr(null)
+          }}
+        >
+          <div className="confirm-dialog" role="alertdialog" onClick={(e) => e.stopPropagation()}>
+            <h2 className="confirm-dialog-title">Ngừng kinh doanh biến thể?</h2>
+            <p className="confirm-dialog-body">
+              Đặt biến thể <strong>{variantDcConfirm.name}</strong> (mã #{variantDcConfirm.id}) thành <strong>Ngừng kinh doanh</strong>. Thao tác này không
+              thể đổi ngược qua giao diện này.
+            </p>
+            {variantDcErr && <p className="modal-form-error">{variantDcErr}</p>}
+            <div className="confirm-dialog-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={variantDcSubmitting}
+                onClick={() => {
+                  setVariantDcConfirm(null)
+                  setVariantDcErr(null)
+                }}
+              >
+                Hủy
+              </button>
+              <button type="button" className="btn-danger" disabled={variantDcSubmitting} onClick={() => void executeVariantDiscontinue()}>
+                {variantDcSubmitting ? 'Đang xử lý…' : 'Xác nhận ngừng KD'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -600,15 +757,6 @@ export function ProductDetailPage() {
                 Giá
                 <input value={editForm.price} onChange={(e) => setEditForm((f) => ({ ...f, price: e.target.value }))} inputMode="decimal" />
                 {editErrors.price && <span className="modal-field-error">{editErrors.price}</span>}
-              </label>
-              <label className="modal-field">
-                Tồn kho
-                <input
-                  value={editForm.stockQuantity}
-                  onChange={(e) => setEditForm((f) => ({ ...f, stockQuantity: e.target.value }))}
-                  inputMode="numeric"
-                />
-                {editErrors.stock && <span className="modal-field-error">{editErrors.stock}</span>}
               </label>
               <label className="modal-field">
                 Ảnh (ít nhất 1, tối đa 4)
@@ -733,10 +881,66 @@ export function ProductDetailPage() {
             </div>
             <div className="product-detail-info-col">
               <header className="product-detail-card-header">
-                <h1 className="product-detail-name">{product.name}</h1>
-                <span className={`product-status-badge product-status-badge--${String(product.status).toLowerCase()}`}>
-                  {product.status}
-                </span>
+                <div className="product-detail-card-header-top">
+                  <div className="product-detail-title-group">
+                    <h1 className="product-detail-name">{product.name}</h1>
+                    <span className={`product-status-badge product-status-badge--${String(product.status).toLowerCase()}`}>
+                      {PRODUCT_STATUS_VI[product.status] ?? product.status}
+                    </span>
+                  </div>
+                </div>
+                {product.status === 'Active' && (
+                  <div className="product-detail-status-actions">
+                    <button
+                      type="button"
+                      className="product-detail-status-btn product-detail-status-btn--inactive"
+                      onClick={() => {
+                        setProductStatusErr(null)
+                        setProductStatusConfirm('Inactive')
+                      }}
+                    >
+                      <IconPauseCircle />
+                      <span>Ngừng bán</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="product-detail-status-btn product-detail-status-btn--archived"
+                      onClick={() => {
+                        setProductStatusErr(null)
+                        setProductStatusConfirm('Archived')
+                      }}
+                    >
+                      <IconArchive />
+                      <span>Lưu trữ</span>
+                    </button>
+                  </div>
+                )}
+                {(product.status === 'Inactive' || product.status === 'Draft') && (
+                  <div className="product-detail-status-actions">
+                    <button
+                      type="button"
+                      className="product-detail-status-btn product-detail-status-btn--active"
+                      onClick={() => {
+                        setProductStatusErr(null)
+                        setProductStatusConfirm('Active')
+                      }}
+                    >
+                      <IconPlayCircle />
+                      <span>Đang bán</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="product-detail-status-btn product-detail-status-btn--archived"
+                      onClick={() => {
+                        setProductStatusErr(null)
+                        setProductStatusConfirm('Archived')
+                      }}
+                    >
+                      <IconArchive />
+                      <span>Lưu trữ</span>
+                    </button>
+                  </div>
+                )}
               </header>
               <p className="product-detail-meta">
                 #{product.id} · {product.brandName} · Nồng độ: {product.concentration}
@@ -850,15 +1054,31 @@ export function ProductDetailPage() {
                       <div className="variant-card-body">
                         <div className="variant-card-head">
                           <h3 className="variant-card-name">{v.name}</h3>
-                          <button
-                            type="button"
-                            className="variant-card-edit-btn"
-                            onClick={() => openEdit(v)}
-                            aria-label={`Cập nhật biến thể ${v.id}`}
-                            title="Cập nhật biến thể"
-                          >
-                            ✎
-                          </button>
+                          <div className="variant-card-head-actions">
+                            {v.status !== 'Discontinued' && (
+                              <button
+                                type="button"
+                                className="variant-card-discontinue-btn"
+                                onClick={() => {
+                                  setVariantDcErr(null)
+                                  setVariantDcConfirm({ id: v.id, name: v.name })
+                                }}
+                                aria-label={`Ngừng kinh doanh biến thể ${v.id}`}
+                                title="Ngừng kinh doanh (Discontinued)"
+                              >
+                                <IconBanProduct />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="variant-card-edit-btn"
+                              onClick={() => openEdit(v)}
+                              aria-label={`Cập nhật biến thể ${v.id}`}
+                              title="Cập nhật biến thể"
+                            >
+                              ✎
+                            </button>
+                          </div>
                         </div>
                         <dl className="variant-card-dl">
                           <div>
@@ -889,7 +1109,7 @@ export function ProductDetailPage() {
                           </div>
                           <div>
                             <dt>Trạng thái</dt>
-                            <dd>{v.status}</dd>
+                            <dd>{VARIANT_STATUS_VI[v.status] ?? v.status}</dd>
                           </div>
                           <div>
                             <dt>Mặc định / nổi bật</dt>

@@ -2,18 +2,18 @@ import { useMemo, useState } from 'react'
 import './OverviewPage.css'
 
 const monthlyRevenue = [
-  { month: 'Jan', revenue: 42_000_000 },
-  { month: 'Feb', revenue: 55_000_000 },
-  { month: 'Mar', revenue: 48_000_000 },
-  { month: 'Apr', revenue: 63_000_000 },
-  { month: 'May', revenue: 71_000_000 },
-  { month: 'Jun', revenue: 67_000_000 },
-  { month: 'Jul', revenue: 74_000_000 },
-  { month: 'Aug', revenue: 69_000_000 },
-  { month: 'Sep', revenue: 77_000_000 },
-  { month: 'Oct', revenue: 82_000_000 },
-  { month: 'Nov', revenue: 79_000_000 },
-  { month: 'Dec', revenue: 88_000_000 },
+  { month: 'Thg 1', revenue: 42_000_000 },
+  { month: 'Thg 2', revenue: 55_000_000 },
+  { month: 'Thg 3', revenue: 48_000_000 },
+  { month: 'Thg 4', revenue: 63_000_000 },
+  { month: 'Thg 5', revenue: 71_000_000 },
+  { month: 'Thg 6', revenue: 67_000_000 },
+  { month: 'Thg 7', revenue: 74_000_000 },
+  { month: 'Thg 8', revenue: 69_000_000 },
+  { month: 'Thg 9', revenue: 77_000_000 },
+  { month: 'Thg 10', revenue: 82_000_000 },
+  { month: 'Thg 11', revenue: 79_000_000 },
+  { month: 'Thg 12', revenue: 88_000_000 },
 ]
 
 function formatCurrencyVnd(value) {
@@ -46,9 +46,9 @@ export function OverviewPage() {
     <section className="overview-page">
       <header className="overview-header">
         <div>
-          <span className="overview-eyebrow">Aura Mystique</span>
-          <h1 className="overview-title">Tong quan doanh thu</h1>
-          <p className="overview-subtitle">Bieu do doanh thu voi du lieu hard code de demo giao dien.</p>
+          <span className="overview-eyebrow">Bảng quản trị</span>
+          <h1 className="overview-title">Tổng quan doanh thu</h1>
+          <p className="overview-subtitle">Biểu đồ doanh thu dùng dữ liệu mẫu để demo giao diện.</p>
         </div>
         <div className="overview-controls">
           <div className="control-group">
@@ -57,14 +57,14 @@ export function OverviewPage() {
               className={`control-btn${range === 6 ? ' active' : ''}`}
               onClick={() => setRange(6)}
             >
-              6 thang
+              6 tháng
             </button>
             <button
               type="button"
               className={`control-btn${range === 12 ? ' active' : ''}`}
               onClick={() => setRange(12)}
             >
-              12 thang
+              12 tháng
             </button>
           </div>
           <div className="control-group">
@@ -73,14 +73,14 @@ export function OverviewPage() {
               className={`control-btn${chartType === 'bar' ? ' active' : ''}`}
               onClick={() => setChartType('bar')}
             >
-              Bar chart
+              Biểu đồ cột
             </button>
             <button
               type="button"
               className={`control-btn${chartType === 'line' ? ' active' : ''}`}
               onClick={() => setChartType('line')}
             >
-              Line chart
+              Biểu đồ đường
             </button>
           </div>
         </div>
@@ -88,15 +88,15 @@ export function OverviewPage() {
 
       <div className="overview-metrics">
         <article className="overview-metric-card">
-          <p className="metric-label">Tong doanh thu</p>
+          <p className="metric-label">Tổng doanh thu</p>
           <p className="metric-value">{formatCurrencyVnd(totalRevenue)}</p>
         </article>
         <article className="overview-metric-card">
-          <p className="metric-label">Trung binh moi thang</p>
+          <p className="metric-label">Trung bình mỗi tháng</p>
           <p className="metric-value">{formatCurrencyVnd(avgRevenue)}</p>
         </article>
         <article className="overview-metric-card">
-          <p className="metric-label">Thang cao nhat</p>
+          <p className="metric-label">Tháng cao nhất</p>
           <p className="metric-value">
             {highestMonth} - {formatCurrencyVnd(maxRevenue)}
           </p>
@@ -105,11 +105,11 @@ export function OverviewPage() {
 
       <article className="overview-chart-card">
         <div className="chart-head">
-          <h2>Doanh thu theo thang</h2>
+          <h2>Doanh thu theo tháng</h2>
         </div>
 
         {chartType === 'bar' ? (
-          <div className="bar-chart" role="img" aria-label="Bieu do cot doanh thu theo thang">
+          <div className="bar-chart" role="img" aria-label="Biểu đồ cột doanh thu theo tháng">
             {visibleRevenue.map((item) => {
               const barHeightPercent = Math.max(8, (item.revenue / maxRevenue) * 100)
 
@@ -125,7 +125,7 @@ export function OverviewPage() {
             })}
           </div>
         ) : (
-          <div className="line-chart-card" role="img" aria-label="Bieu do duong doanh thu theo thang">
+          <div className="line-chart-card" role="img" aria-label="Biểu đồ đường doanh thu theo tháng">
             <svg className="line-chart-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
               <polyline className="line-path" points={linePoints} />
               {visibleRevenue.map((item, index) => {

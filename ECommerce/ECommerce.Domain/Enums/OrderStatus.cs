@@ -1,17 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace ECommerce.Domain.Enums
+﻿namespace ECommerce.Domain.Enums
 {
     public enum OrderStatus
     {
-        Pending,
-        Processing,
-        Shipping,
-        Delivered,
-        Completed,
-        Cancelled,
-        Returned
+        Pending = 0,
+        Processing = 1,
+        Shipping = 2,
+        Delivered = 3,
+        Cancelled = 5,
     }
 }

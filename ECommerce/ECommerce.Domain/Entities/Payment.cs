@@ -1,13 +1,14 @@
 ﻿using ECommerce.Domain.Common;
 using ECommerce.Domain.Enums;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace ECommerce.Domain.Entities
 {
     public class Payment : BaseEntity<int>
     {
+        public int OrderId { get; set; }
+
+        public int PaymentMethodId { get; set; }
+
         public decimal Amount { get; set; }
 
         public string? TransactionId { get; set; }
@@ -16,8 +17,18 @@ namespace ECommerce.Domain.Entities
 
         public DateTime? PaidAt { get; set; }
 
-        public Order Order { get; set; }
+        public string? StripeCheckoutSessionId { get; set; }
 
-        public PaymentMethod PaymentMethod { get; set; }
+        public string? StripePaymentIntentId { get; set; }
+
+        public string? FailureReason { get; set; }
+
+        public DateTime? CheckoutSessionExpiresAt { get; set; }
+
+        public DateTime? LastStripeWebhookAt { get; set; }
+
+        public Order Order { get; set; } = default!;
+
+        public PaymentMethod PaymentMethod { get; set; } = default!;
     }
 }

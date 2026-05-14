@@ -1,5 +1,7 @@
 using ECommerce.Web.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.CookiePolicy;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -12,9 +14,16 @@ builder.Services.AddSession(options =>
 {
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
     options.IdleTimeout = TimeSpan.FromHours(1);
 });
 builder.Services.AddRazorPages();
+builder.Services.Configure<CookiePolicyOptions>(options =>
+{
+    options.MinimumSameSitePolicy = SameSiteMode.Lax;
+    options.HttpOnly = HttpOnlyPolicy.Always;
+    options.Secure = CookieSecurePolicy.SameAsRequest;
+});
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuthSessionManager, AuthSessionManager>();
 builder.Services.AddTransient<ApiAuthenticationHandler>();
@@ -22,11 +31,13 @@ builder.Services.AddHttpClient("ApiAnonymous", client =>
 {
     var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5206";
     client.BaseAddress = new Uri(apiBaseUrl.TrimEnd('/') + "/");
+    client.Timeout = TimeSpan.FromSeconds(15);
 });
 builder.Services.AddHttpClient(Options.DefaultName, client =>
 {
     var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5206";
     client.BaseAddress = new Uri(apiBaseUrl.TrimEnd('/') + "/");
+    client.Timeout = TimeSpan.FromSeconds(15);
 })
     .AddHttpMessageHandler<ApiAuthenticationHandler>();
 builder.Services
@@ -56,7 +67,16 @@ builder.Services
                 context.Token = context.Request.Cookies["access_token"];
                 return Task.CompletedTask;
             },
-            OnAuthenticationFailed = JwtCookieRefreshEvents.HandleAuthenticationFailedAsync
+            OnAuthenticationFailed = JwtCookieRefreshEvents.HandleAuthenticationFailedAsync,
+            OnChallenge = context =>
+            {
+                if (context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase))
+                    return Task.CompletedTask;
+
+                context.HandleResponse();
+                context.Response.Redirect(AuthReturnUrl.BuildSignInUrl(context.Request));
+                return Task.CompletedTask;
+            }
         };
     });
 builder.Services.AddAuthorization();
@@ -71,6 +91,8 @@ if (!app.Environment.IsDevelopment())
 
 app.UseRouting();
 
+app.UseCookiePolicy();
+app.UseMiddleware<AuthCookieRefreshMiddleware>();
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -160,6 +182,12 @@ app.MapDelete("/api/cart/items", async (IHttpClientFactory httpClientFactory, Ca
 }).RequireAuthorization();
 
 // BFF: checkout & order creation (same-origin /api/checkout, /api/orders)
+app.MapPost("/api/auth/refresh-session", async (HttpContext httpContext, CancellationToken cancellationToken) =>
+{
+    var refreshed = await AuthTokenRefresher.TryRefreshAsync(httpContext, cancellationToken);
+    return refreshed ? Results.Ok() : Results.Unauthorized();
+});
+
 app.MapGet("/api/checkout", async (IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
 {
     var client = httpClientFactory.CreateClient();
@@ -200,6 +228,53 @@ app.MapGet("/api/orders/{id:int:min(1)}", async (int id, IHttpClientFactory http
     var client = httpClientFactory.CreateClient();
     using var response = await client.GetAsync($"api/orders/{id}", cancellationToken);
     var payload = await response.Content.ReadAsStringAsync(cancellationToken);
+    return Results.Content(payload, "application/json", statusCode: (int)response.StatusCode);
+}).RequireAuthorization();
+
+app.MapPost("/api/orders/{id:int:min(1)}/cancel", async (int id, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
+{
+    var client = httpClientFactory.CreateClient();
+    using var response = await client.PostAsync($"api/orders/{id}/cancel", null, cancellationToken);
+    var payload = await response.Content.ReadAsStringAsync(cancellationToken);
+    if (string.IsNullOrWhiteSpace(payload))
+        return Results.StatusCode((int)response.StatusCode);
+    return Results.Content(payload, "application/json", statusCode: (int)response.StatusCode);
+}).RequireAuthorization();
+
+app.MapPost("/api/payments/stripe/checkout", async (HttpRequest request, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
+{
+    var body = await new StreamReader(request.Body).ReadToEndAsync(cancellationToken);
+    var client = httpClientFactory.CreateClient();
+    using var req = new HttpRequestMessage(HttpMethod.Post, "api/payments/stripe/checkout")
+    {
+        Content = new StringContent(body, Encoding.UTF8, "application/json")
+    };
+    using var response = await client.SendAsync(req, cancellationToken);
+    var payload = await response.Content.ReadAsStringAsync(cancellationToken);
+    if (string.IsNullOrWhiteSpace(payload))
+        return Results.StatusCode((int)response.StatusCode);
+    return Results.Content(payload, "application/json", statusCode: (int)response.StatusCode);
+}).RequireAuthorization();
+
+app.MapGet("/api/payments/stripe/orders/{orderId:int:min(1)}/status", async (int orderId, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
+{
+    var client = httpClientFactory.CreateClient();
+    using var response = await client.GetAsync($"api/payments/stripe/orders/{orderId}/status", cancellationToken);
+    var payload = await response.Content.ReadAsStringAsync(cancellationToken);
+    return Results.Content(payload, "application/json", statusCode: (int)response.StatusCode);
+}).RequireAuthorization();
+
+app.MapPost("/api/payments/stripe/orders/{orderId:int:min(1)}/retry", async (int orderId, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
+{
+    var client = httpClientFactory.CreateClient();
+    using var req = new HttpRequestMessage(HttpMethod.Post, $"api/payments/stripe/orders/{orderId}/retry")
+    {
+        Content = new StringContent("{}", Encoding.UTF8, "application/json")
+    };
+    using var response = await client.SendAsync(req, cancellationToken);
+    var payload = await response.Content.ReadAsStringAsync(cancellationToken);
+    if (string.IsNullOrWhiteSpace(payload))
+        return Results.StatusCode((int)response.StatusCode);
     return Results.Content(payload, "application/json", statusCode: (int)response.StatusCode);
 }).RequireAuthorization();
 

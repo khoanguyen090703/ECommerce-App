@@ -3,13 +3,19 @@
   "use strict";
 
   var initPreloader = function() {
-    $(document).ready(function($) {
-    var Body = $('body');
-        Body.addClass('preloader-site');
-    });
-    $(window).load(function() {
-        $('.preloader-wrapper').fadeOut();
-        $('body').removeClass('preloader-site');
+    var hidePreloader = function() {
+      $('.preloader-wrapper').stop(true, true).fadeOut(200);
+      $('body').removeClass('preloader-site');
+    };
+
+    $('body').addClass('preloader-site');
+    $(window).on('load', hidePreloader);
+  // Fallback when returning from external redirects (e.g. Stripe) or if load never fires.
+    setTimeout(hidePreloader, 2500);
+    window.addEventListener('pageshow', function (event) {
+      if (event.persisted) {
+        hidePreloader();
+      }
     });
   }
 

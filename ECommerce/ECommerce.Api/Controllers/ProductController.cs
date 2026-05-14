@@ -43,6 +43,7 @@ namespace ECommerce.Api.Controllers
             return Ok(products);
         }
 
+        /// <param name="parameters">Use <c>includeAllStatuses=true</c> (admin) to list non-available variants; default lists only Available.</param>
         [HttpGet("{productId:int:min(1)}/variants")]
         public async Task<IActionResult> GetProductVariants(int productId, [FromQuery] ProductVariantsQueryParams parameters)
         {

@@ -25,6 +25,8 @@ namespace ECommerce.Application.Services
 
         private readonly IProductVariantRepository _productVariantRepository;
 
+        private readonly IProductRepository _productRepository;
+
         private readonly ICurrentUserService _currentUserService;
 
         private readonly ICustomerRepository _customerRepository;
@@ -38,11 +40,12 @@ namespace ECommerce.Application.Services
 
         private readonly ILogger<OrderService> _logger;
 
-        public OrderService(IOrderRepository orderRepository, IPaymentMethodRepository paymentMethodRepository, IProductVariantRepository productVariantRepository, ICurrentUserService currentUserService, ICustomerRepository customerRepository, IPaymentRepository paymentRepository, ICartRepository cartRepository, IUnitOfWork unitOfWork, IUserService userService, ILogger<OrderService> logger)
+        public OrderService(IOrderRepository orderRepository, IPaymentMethodRepository paymentMethodRepository, IProductVariantRepository productVariantRepository, IProductRepository productRepository, ICurrentUserService currentUserService, ICustomerRepository customerRepository, IPaymentRepository paymentRepository, ICartRepository cartRepository, IUnitOfWork unitOfWork, IUserService userService, ILogger<OrderService> logger)
         {
             _orderRepository = orderRepository;
             _paymentMethodRepository = paymentMethodRepository;
             _productVariantRepository = productVariantRepository;
+            _productRepository = productRepository;
             _currentUserService = currentUserService;
             _customerRepository = customerRepository;
             _paymentRepository = paymentRepository;
@@ -104,7 +107,7 @@ namespace ECommerce.Application.Services
             return checkout;
         }
 
-        public async Task CreateOrderAsync(CreateOrderRequest request)
+        public async Task<CreateOrderResponse> CreateOrderAsync(CreateOrderRequest request)
         {
             // get current customer
             var userId = _currentUserService.UserId;
@@ -178,7 +181,7 @@ namespace ECommerce.Application.Services
                 subTotal += newOrderItem.TotalPrice;
 
                 productVariant.StockQuantity -= requestedItem.Quantity;
-                if (productVariant.StockQuantity == 0)
+                if (productVariant.Status != VariantStatus.Discontinued && productVariant.StockQuantity <= 0)
                 {
                     productVariant.Status = VariantStatus.OutOfStock;
                 }
@@ -237,7 +240,33 @@ namespace ECommerce.Application.Services
 
                 await _cartRepository.UpdateAsync(cart);
 
+                var affectedProductIds = variantCache.Values
+                    .Select(v => v.Product?.Id ?? 0)
+                    .Where(id => id > 0)
+                    .Distinct()
+                    .ToList();
+
+                foreach (var productId in affectedProductIds)
+                {
+                    var product = await _productRepository.GetByIdAsync(productId, includeProductVariants: true);
+                    if (product == null || product.Status != ProductStatus.Active)
+                        continue;
+
+                    var anyAvailable = product.ProductVariants.Any(v => v.Status == VariantStatus.Available);
+                    if (!anyAvailable)
+                        product.Status = ProductStatus.Inactive;
+                }
+
                 await _unitOfWork.CommitTransactionAsync();
+
+                var requiresOnline = IsOnlineCheckoutPaymentMethod(paymentMethod.Name);
+                return new CreateOrderResponse
+                {
+                    OrderId = newOrder.Id,
+                    RequiresOnlinePayment = requiresOnline,
+                    PaymentStatus = newOrder.PaymentStatus.ToString(),
+                    CanRetryOnlinePayment = requiresOnline,
+                };
             }
             catch (Exception)
             {
@@ -245,6 +274,12 @@ namespace ECommerce.Application.Services
                 throw new ConflictException("An error occurred while creating the order. Please try again.");
             }
         }
+
+        /// <summary>
+        /// Stripe Checkout applies to methods named Stripe or legacy VnPay until migrated.
+        /// </summary>
+        private static bool IsOnlineCheckoutPaymentMethod(string paymentMethodName) =>
+            OrderMappings.IsOnlineCheckoutPaymentMethodName(paymentMethodName);
 
         public async Task<PagedResult<MyOrderResponse>> GetMyOrdersAsync(OrderQueryParams parameters)
         {
@@ -314,6 +349,135 @@ namespace ECommerce.Application.Services
             }
 
             return order.ToOrderDetailsResponse();
+        }
+
+        public async Task<OrderDetailsResponse> CancelMyOrderAsync(int id, CancellationToken cancellationToken = default)
+        {
+            var userId = RequireCustomerUserId();
+
+            var order = await _orderRepository.GetByIdForUpdateAsync(id, cancellationToken);
+            if (order == null)
+                throw new NotFoundException($"Order with id {id} not found.");
+
+            if (order.Customer.IdentityId != userId)
+                throw new ForbiddenException("You can only cancel your own orders.");
+
+            if (order.Status != OrderStatus.Pending)
+                throw new ConflictException("Only pending orders can be cancelled.");
+
+            await _unitOfWork.BeginTransactionAsync();
+
+            try
+            {
+                ApplyOrderCancellation(order);
+                await _orderRepository.UpdateAsync(order);
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch (Exception ex) when (ex is not ConflictException and not ForbiddenException and not NotFoundException and not UnauthorizedAccessException)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw new ConflictException("An error occurred while cancelling the order. Please try again.");
+            }
+
+            return await GetOrderDetailsAsync(id);
+        }
+
+        public async Task<OrderDetailsResponse> UpdateOrderStatusAsync(
+            int id,
+            UpdateOrderStatusRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            if (!_currentUserService.IsAuthenticated)
+                throw new UnauthorizedAccessException("User is not authenticated.");
+
+            if (!_currentUserService.IsInRole("Admin"))
+                throw new ForbiddenException("Only admin can update order status.");
+
+            if (string.IsNullOrWhiteSpace(request.Status))
+                throw new ArgumentException("Order status is required.");
+
+            if (!Enum.TryParse<OrderStatus>(request.Status.Trim(), true, out var targetStatus))
+                throw new ArgumentException("Invalid order status.");
+
+            var order = await _orderRepository.GetByIdForUpdateAsync(id, cancellationToken);
+            if (order == null)
+                throw new NotFoundException($"Order with id {id} not found.");
+
+            if (!IsAllowedAdminStatusTransition(order.Status, targetStatus))
+                throw new ConflictException($"Cannot change order status from {order.Status} to {targetStatus}.");
+
+            await _unitOfWork.BeginTransactionAsync();
+
+            try
+            {
+                if (targetStatus == OrderStatus.Cancelled)
+                {
+                    ApplyOrderCancellation(order);
+                }
+                else
+                {
+                    order.Status = targetStatus;
+                }
+
+                if (targetStatus == OrderStatus.Delivered)
+                    order.CompletedDate = DateTime.UtcNow;
+
+                await _orderRepository.UpdateAsync(order);
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch (Exception ex) when (ex is not ConflictException and not ForbiddenException and not NotFoundException and not UnauthorizedAccessException and not ArgumentException)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw new ConflictException("An error occurred while updating the order status. Please try again.");
+            }
+
+            return await GetOrderDetailsAsync(id);
+        }
+
+        private Guid RequireCustomerUserId()
+        {
+            var userId = _currentUserService.UserId;
+            if (!userId.HasValue)
+                throw new UnauthorizedAccessException("User is not authenticated.");
+
+            if (!_currentUserService.IsInRole("Customer"))
+                throw new ForbiddenException("Only customers can perform this action.");
+
+            return userId.Value;
+        }
+
+        private static bool IsAllowedAdminStatusTransition(OrderStatus current, OrderStatus target)
+        {
+            if (current == target)
+                return false;
+
+            return (current, target) switch
+            {
+                (OrderStatus.Pending, OrderStatus.Processing) => true,
+                (OrderStatus.Pending, OrderStatus.Cancelled) => true,
+                (OrderStatus.Processing, OrderStatus.Shipping) => true,
+                (OrderStatus.Shipping, OrderStatus.Delivered) => true,
+                _ => false
+            };
+        }
+
+        private static void ApplyOrderCancellation(Order order)
+        {
+            order.Status = OrderStatus.Cancelled;
+            order.CancelledDate = DateTime.UtcNow;
+            RestoreOrderItemsStock(order.OrderItems);
+        }
+
+        private static void RestoreOrderItemsStock(IEnumerable<OrderItem> orderItems)
+        {
+            foreach (var item in orderItems)
+            {
+                var variant = item.ProductVariant;
+                variant.StockQuantity += item.Quantity;
+
+                if (variant.Status == VariantStatus.OutOfStock && variant.StockQuantity > 0)
+                    variant.Status = VariantStatus.Available;
+            }
         }
     }
 }

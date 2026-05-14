@@ -28,6 +28,7 @@ namespace ECommerce.Application
             services.AddTransient<FluentValidation.IValidator<UpdateVariantRequest>, UpdateVariantRequestValidator>();
             services.AddTransient<FluentValidation.IValidator<ECommerce.SharedViewModels.DTOs.Request.CreateVariantRequest>, CreateVariantRequestValidator>();
             services.AddTransient<FluentValidation.IValidator<CreateVariantRequest>, CreateVariantRequestValidator>();
+            services.AddTransient<FluentValidation.IValidator<AddVariantStockBatchRequest>, AddVariantStockBatchRequestValidator>();
 
             return services;
         }

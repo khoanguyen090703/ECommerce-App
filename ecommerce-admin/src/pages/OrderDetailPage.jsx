@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { apiClient, readApiErrorMessage, resolveImageUrl } from '../lib/api'
+import {
+  canAdminCancelOrder,
+  getNextAdminOrderStatus,
+  nextAdminOrderStatusLabel,
+  orderPaymentStatusLabelVi,
+  orderStatusLabelVi,
+} from '../lib/orderLabels'
 
 function formatDate(iso) {
   if (!iso) return '—'
@@ -20,9 +27,7 @@ function statusClass(status) {
     case 'processing': return 'orders-status-badge orders-status-badge--processing'
     case 'shipping': return 'orders-status-badge orders-status-badge--shipping'
     case 'delivered': return 'orders-status-badge orders-status-badge--delivered'
-    case 'completed': return 'orders-status-badge orders-status-badge--completed'
     case 'cancelled': return 'orders-status-badge orders-status-badge--cancelled'
-    case 'returned': return 'orders-status-badge orders-status-badge--returned'
     default: return 'orders-status-badge'
   }
 }
@@ -33,6 +38,8 @@ export function OrderDetailPage() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [actionSubmitting, setActionSubmitting] = useState(false)
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
 
   useEffect(() => {
     if (!Number.isFinite(id) || id < 1) {
@@ -61,8 +68,56 @@ export function OrderDetailPage() {
     return () => { cancelled = true }
   }, [id])
 
+  async function updateStatus(nextStatus) {
+    setActionSubmitting(true)
+    try {
+      const res = await apiClient.patch(`/api/orders/${id}/status`, { status: nextStatus })
+      setData(res.data)
+      return true
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : readApiErrorMessage(e))
+      return false
+    } finally {
+      setActionSubmitting(false)
+    }
+  }
+
+  async function executeCancel() {
+    const ok = await updateStatus('Cancelled')
+    if (ok) setShowCancelConfirm(false)
+  }
+
+  const nextStatus = data ? getNextAdminOrderStatus(data.status) : null
+
   return (
     <div className="order-detail-page categories-page">
+      {showCancelConfirm && (
+        <div
+          className="confirm-backdrop"
+          role="presentation"
+          onClick={() => !actionSubmitting && setShowCancelConfirm(false)}
+        >
+          <div
+            className="confirm-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="cancel-order-detail-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="cancel-order-detail-title" className="confirm-dialog-title">Xác nhận hủy đơn</h2>
+            <p className="confirm-dialog-body">Bạn có chắc muốn hủy đơn hàng này?</p>
+            <div className="confirm-dialog-actions">
+              <button type="button" className="btn-secondary" disabled={actionSubmitting} onClick={() => setShowCancelConfirm(false)}>
+                Không
+              </button>
+              <button type="button" className="btn-danger" disabled={actionSubmitting} onClick={() => void executeCancel()}>
+                {actionSubmitting ? 'Đang hủy…' : 'Hủy đơn'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="product-detail-toolbar">
         <Link to="/orders" className="link-back">
           ← Danh sách đơn hàng
@@ -77,10 +132,34 @@ export function OrderDetailPage() {
           <section className="order-detail-summary categories-table-card">
             <div className="order-detail-header">
               <div>
-                <span className="eyebrow">Order</span>
-                <h1 className="categories-title">#{data.id}</h1>
+                <span className="eyebrow">Bảng quản trị</span>
+                <h1 className="categories-title">Đơn hàng #{data.id}</h1>
               </div>
-              <span className={statusClass(data.status)}>{data.status || '—'}</span>
+              <div className="order-detail-header-actions">
+                <span className={statusClass(data.status)}>{orderStatusLabelVi(data.status)}</span>
+                <div className="order-detail-action-buttons">
+                  {canAdminCancelOrder(data.status) && (
+                    <button
+                      type="button"
+                      className="btn-secondary orders-view-btn orders-view-btn--danger"
+                      disabled={actionSubmitting}
+                      onClick={() => setShowCancelConfirm(true)}
+                    >
+                      Hủy đơn
+                    </button>
+                  )}
+                  {nextStatus && (
+                    <button
+                      type="button"
+                      className="btn-primary orders-view-btn"
+                      disabled={actionSubmitting}
+                      onClick={() => void updateStatus(nextStatus)}
+                    >
+                      {nextAdminOrderStatusLabel(nextStatus)}
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="order-detail-grid">
@@ -105,8 +184,12 @@ export function OrderDetailPage() {
                 <p>{formatDate(data.completedDate)}</p>
               </div>
               <div>
+                <strong>Ngày hủy</strong>
+                <p>{formatDate(data.cancelledDate)}</p>
+              </div>
+              <div>
                 <strong>Thanh toán</strong>
-                <p>{data.paymentStatus || '—'}</p>
+                <p>{orderPaymentStatusLabelVi(data.paymentStatus)}</p>
               </div>
               <div>
                 <strong>Tạm tính</strong>

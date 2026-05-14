@@ -26,8 +26,8 @@ namespace ECommerce.Api.Controllers
         {
             _logger.LogInformation("Creating a new order.");
 
-            await _orderService.CreateOrderAsync(request);
-            return Created();
+            var created = await _orderService.CreateOrderAsync(request);
+            return Created($"/api/orders/{created.OrderId}", created);
         }
 
         [HttpGet("me")]
@@ -51,6 +51,25 @@ namespace ECommerce.Api.Controllers
         public async Task<IActionResult> GetOrderDetails(int id)
         {
             var details = await _orderService.GetOrderDetailsAsync(id);
+            return Ok(details);
+        }
+
+        [HttpPost("{id:int:min(1)}/cancel")]
+        [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> CancelMyOrder(int id, CancellationToken cancellationToken)
+        {
+            var details = await _orderService.CancelMyOrderAsync(id, cancellationToken);
+            return Ok(details);
+        }
+
+        [HttpPatch("{id:int:min(1)}/status")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateOrderStatus(
+            int id,
+            [FromBody] UpdateOrderStatusRequest request,
+            CancellationToken cancellationToken)
+        {
+            var details = await _orderService.UpdateOrderStatusAsync(id, request, cancellationToken);
             return Ok(details);
         }
 

@@ -1,0 +1,117 @@
+@page "/Orders/PaymentSuccess"
+@model ECommerce.Web.Pages.Orders.PaymentSuccessModel
+@{
+    ViewData["Title"] = "Thanh toán thành công";
+}
+
+<div class="container py-5">
+    <div class="mx-auto" style="max-width: 640px;">
+        @if (!string.IsNullOrEmpty(Model.PageError))
+        {
+            <div class="alert alert-warning" role="alert">@Model.PageError</div>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-primary" asp-page="/Orders/Index">Đơn hàng của tôi</a>
+                <a class="btn btn-outline-secondary" asp-page="/Index">Về trang chủ</a>
+            </div>
+        }
+        else if (Model.OrderLoaded && Model.OrderId is int oid)
+        {
+            @if (Model.OrderDetailsUnavailable)
+            {
+                <div class="alert alert-info small" role="status">
+                    Stripe đã chuyển bạn về sau thanh toán. Chi tiết đơn có thể cập nhật chậm vài giây — bạn vẫn có thể mở đơn hàng bên dưới.
+                </div>
+            }
+
+            @if (Model.ShouldSyncPaymentInBackground)
+            {
+                <div id="paySuccessSync" class="text-center text-muted small py-2" role="status">
+                    <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                    <span>Đang đồng bộ trạng thái thanh toán…</span>
+                </div>
+            }
+
+            <div id="paySuccessCard" class="card shadow-sm border-0">
+                <div class="card-body p-4 p-md-5 text-center">
+                    <div class="mb-3" style="font-size: 3rem; line-height: 1;">✅</div>
+                    <h1 class="h4 mb-2">Thanh toán thành công</h1>
+                    <p id="paySuccessHint" class="text-muted mb-2">
+                        Đơn hàng <strong>#@oid</strong>
+                        @if (Model.TotalAmount is decimal t)
+                        {
+                            <span> — Tổng @t.ToString("N0") ₫</span>
+                        }
+                    </p>
+                    <p id="paySuccessSub" class="small text-muted mb-4">
+                        @if (Model.ReturnedFromStripe)
+                        {
+                            <text>Cảm ơn bạn. Stripe đã ghi nhận thanh toán.</text>
+                        }
+                        else
+                        {
+                            <text>Cảm ơn bạn. Đơn hàng đã được thanh toán.</text>
+                        }
+                    </p>
+                    <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+                        <a class="btn btn-primary" asp-page="/Orders/Details" asp-route-id="@oid">Xem chi tiết đơn hàng</a>
+                        <a class="btn btn-outline-secondary" asp-page="/Orders/Index">Đơn hàng của tôi</a>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.ShouldSyncPaymentInBackground)
+            {
+                <script>
+                    (function () {
+                        const orderId = @oid;
+                        const syncEl = document.getElementById('paySuccessSync');
+                        const sub = document.getElementById('paySuccessSub');
+
+                        function hideSync() {
+                            if (syncEl) syncEl.classList.add('d-none');
+                        }
+
+                        async function fetchJson(url) {
+                            const controller = new AbortController();
+                            const timer = window.setTimeout(function () { controller.abort(); }, 8000);
+                            try {
+                                const res = await fetch(url, {
+                                    credentials: 'same-origin',
+                                    headers: { 'Accept': 'application/json' },
+                                    signal: controller.signal
+                                });
+                                const text = await res.text();
+                                let data = null;
+                                if (text) { try { data = JSON.parse(text); } catch { data = null; } }
+                                if (!res.ok) return null;
+                                return data;
+                            } finally {
+                                window.clearTimeout(timer);
+                            }
+                        }
+
+                        function delay(ms) { return new Promise(function (r) { window.setTimeout(r, ms); }); }
+
+                        document.addEventListener('DOMContentLoaded', async function () {
+                            let paid = false;
+                            for (let i = 0; i < 8 && !paid; i++) {
+                                const st = await fetchJson('/api/payments/stripe/orders/' + orderId + '/status');
+                                const ops = (st?.orderPaymentStatus ?? st?.OrderPaymentStatus ?? '').toString();
+                                if (ops.toLowerCase() === 'paid') {
+                                    paid = true;
+                                    break;
+                                }
+                                await delay(700);
+                            }
+
+                            hideSync();
+                            if (!paid && sub) {
+                                sub.textContent = 'Nếu tiền đã trừ, trạng thái đơn sẽ cập nhật sau vài phút. Bạn có thể tải lại trang chi tiết đơn hàng.';
+                            }
+                        });
+                    })();
+                </script>
+            }
+        }
+    </div>
+</div>

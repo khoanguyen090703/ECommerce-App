@@ -11,13 +11,14 @@ import { ProductEditPage } from './pages/ProductEditPage'
 import { ProductsPage } from './pages/ProductsPage'
 import { OrderDetailPage } from './pages/OrderDetailPage'
 import { OrdersPage } from './pages/OrdersPage'
+import { VariantRestockPage } from './pages/VariantRestockPage'
 import  LoginPage  from './pages/LoginPage'
 import { OverviewPage } from './pages/OverviewPage'
 import './App.css'
 
 const navItems = [
   {
-    label: 'Overview',
+    label: 'Tổng quan',
     to: '/dashboard',
     end: true,
     icon: (
@@ -27,7 +28,7 @@ const navItems = [
     ),
   },
   {
-    label: 'Customers',
+    label: 'Khách hàng',
     to: '/customers',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -36,7 +37,7 @@ const navItems = [
     ),
   },
   {
-    label: 'Products',
+    label: 'Sản phẩm',
     to: '/products',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -45,7 +46,16 @@ const navItems = [
     ),
   },
   {
-    label: 'Categories',
+    label: 'Nhập kho',
+    to: '/variants/restock',
+    icon: (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Zm0 16H5V5h14v14ZM7 10h2v7H7v-7Zm4-3h2v10h-2V7Zm4 3h2v7h-2v-7Z" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Danh mục',
     to: '/categories',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -54,7 +64,7 @@ const navItems = [
     ),
   },
   {
-    label: 'Orders',
+    label: 'Đơn hàng',
     to: '/orders',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -65,18 +75,19 @@ const navItems = [
 ]
 
 const pageTitles = {
-  overview: 'Overview',
-  customers: 'Customers',
-  products: 'Products',
-  categories: 'Categories',
-  orders: 'Orders',
+  overview: 'Tổng quan',
+  customers: 'Khách hàng',
+  products: 'Sản phẩm',
+  categories: 'Danh mục',
+  orders: 'Đơn hàng',
+  restock: 'Nhập kho',
 }
 
 function Sidebar() {
   return (
-    <aside className="sidebar" aria-label="Main navigation">
+    <aside className="sidebar" aria-label="Điều hướng chính">
       <div className="brand">
-        <img src={adminLogo} alt="ECommerce Admin" />
+        <img src={adminLogo} alt="Quản trị ECommerce" />
       </div>
 
       <div className="sidebar-divider" />
@@ -144,7 +155,7 @@ function Header() {
       .join('')
   }, [profile.fullName, profile.email])
 
-  const displayName = profile.fullName?.trim() || 'User'
+  const displayName = profile.fullName?.trim() || 'Người dùng'
   const displayEmail = profile.email?.trim() || '—'
   const avatarSrc = resolveImageUrl(profile.avatarUrl)
 
@@ -155,7 +166,7 @@ function Header() {
 
   return (
     <header className="top-header">
-      <button className="notification-button" type="button" aria-label="Notifications">
+      <button className="notification-button" type="button" aria-label="Thông báo">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-6v-5c0-3.07-1.63-5.64-4.5-6.32V4a2.5 2.5 0 0 0-5 0v.68C6.63 5.36 5 7.92 5 11v5l-2 2v1h18v-1l-2-2Z" />
         </svg>
@@ -165,7 +176,7 @@ function Header() {
         <button
           className="avatar-button"
           type="button"
-          aria-label="Open profile menu"
+          aria-label="Mở menu tài khoản"
           aria-expanded={isProfileOpen}
           onClick={() => setIsProfileOpen((current) => !current)}
         >
@@ -183,11 +194,11 @@ function Header() {
               {avatarSrc ? <img src={avatarSrc} alt={displayName} className="avatar-image" /> : initials}
             </div>
             <div>
-              <p className="hello-text">Hello {displayName}</p>
+              <p className="hello-text">Xin chào, {displayName}</p>
               <p className="email-text">{displayEmail}</p>
             </div>
             <button className="logout-button" type="button" onClick={logout}>
-              Logout
+              Đăng xuất
             </button>
           </div>
         )}
@@ -211,6 +222,7 @@ function AdminLayout() {
             <Route path="/products/new" element={<ProductCreatePage />} />
             <Route path="/products/:productId" element={<ProductDetailPage />} />
             <Route path="/products/:productId/edit" element={<ProductEditPage />} />
+            <Route path="/variants/restock" element={<VariantRestockPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
             <Route path="/orders" element={<OrdersPage />} />
             <Route path="/orders/:orderId" element={<OrderDetailPage />} />

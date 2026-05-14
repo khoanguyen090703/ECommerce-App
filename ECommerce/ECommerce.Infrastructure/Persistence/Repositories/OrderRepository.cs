@@ -36,7 +36,8 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
 
         public async Task UpdateAsync(Order order)
         {
-            _context.Orders.Update(order);
+            if (_context.Entry(order).State == EntityState.Detached)
+                _context.Orders.Update(order);
             await _context.SaveChangesAsync();
         }
 
@@ -54,6 +55,16 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
             return await query.ToPagedListAsync(parameters.PageNumber, parameters.PageSize);
         }
 
+        public async Task<Order?> GetByIdForUpdateAsync(int id, CancellationToken cancellationToken = default)
+        {
+            return await _context.Orders
+                .Include(o => o.Customer)
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.ProductVariant)
+                .ThenInclude(pv => pv.Product)
+                .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+        }
+
         public async Task<Order?> GetDetailsByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             return await _context.Orders
@@ -61,6 +72,8 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.ProductVariant).ThenInclude(pv => pv.Images)
                 .Include(o => o.Customer)
+                .Include(o => o.Payments)
+                .ThenInclude(p => p.PaymentMethod)
                 .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
         }
 
@@ -69,6 +82,7 @@ namespace ECommerce.Infrastructure.Persistence.Repositories
             var query = _context.Orders
                 .AsNoTracking()
                 .Include(o => o.Customer)
+                .Include(o => o.Payments).ThenInclude(p => p.PaymentMethod)
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.ProductVariant).ThenInclude(pv => pv.Images)
                 .AsQueryable();

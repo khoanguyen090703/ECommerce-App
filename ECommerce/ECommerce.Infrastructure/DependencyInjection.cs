@@ -110,6 +110,11 @@ namespace ECommerce.Infrastructure
                 configuration.GetSection(CloudinarySettings.SectionName));
             services.AddScoped<IImageStorageService, CloudinaryImageStorageService>();
 
+            // Stripe Payment
+            services.Configure<StripeSettings>(
+                configuration.GetSection(StripeSettings.SectionName));     
+            services.AddScoped<IStripePaymentService, StripePaymentService>();
+
             // Đăng ký HttpContextAccessor - Thư viện dùng để truy cập HttpContext từ Service
             services.AddHttpContextAccessor();
             services.AddScoped<ICurrentUserService, CurrentUserService>();

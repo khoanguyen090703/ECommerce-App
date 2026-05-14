@@ -185,6 +185,9 @@ namespace ECommerce.Application.Services
             if (variant == null)
                 throw new NotFoundException($"Variant with id {variantId} not found.");
 
+            if (variant.Status != VariantStatus.Available)
+                throw new NotFoundException($"Variant with id {variantId} not found.");
+
             var product = variant.Product;
             if (product == null)
                 throw new NotFoundException($"Parent product for variant id {variantId} not found.");
@@ -318,24 +321,20 @@ namespace ECommerce.Application.Services
                     throw new ConflictException("Product has no variants. Please add at least one variant before activating the product.");
 
                 // Ensure at least one variant has stock > 0
-                var anyWithStock = product.ProductVariants.Any(v => v.StockQuantity > 0);
-                if (!anyWithStock)
-                    throw new ConflictException("All variants have stock equal to 0. Please add stock to at least one variant before activating the product.");
+                //var anyWithStock = product.ProductVariants.Any(v => v.StockQuantity > 0);
+                //if (!anyWithStock)
+                //    throw new ConflictException("All variants have stock equal to 0. Please add stock to at least one variant before activating the product.");
+
+                // Ensure at least one variant is Available (not OutOfStock / Discontinued)
+                var anyAvailable = product.ProductVariants.Any(v => v.Status == VariantStatus.Available);
+                if (!anyAvailable)
+                    throw new ConflictException("At least one variant must have status Available before activating the product.");
             }
 
             // Update from Draft to Inactive is not allowed
             if (product.Status == ProductStatus.Draft && status == ProductStatus.Inactive)
             {
                 throw new ConflictException("Update Draft product to Inactive is not allowed.");
-            }
-
-            
-
-            // Rule 2: To Active, ensure product has at least one variant
-            if (status == ProductStatus.Active)
-            {
-                if (product.ProductVariants == null || !product.ProductVariants.Any())
-                    throw new ConflictException("Product has no variants. Add variants or remove the product completely.");
             }
 
             // All checks passed, update status

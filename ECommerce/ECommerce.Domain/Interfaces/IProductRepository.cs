@@ -27,6 +27,8 @@ namespace ECommerce.Domain.Interfaces
         /// <param name="excludeProductId">When set, a product with this id is ignored (for updates).</param>
         Task<bool> IsNameExistedAsync(string name, int? excludeProductId = null);
         Task<PagedResult<ProductVariant>> GetVariantsAsync(ECommerce.Domain.QueryParameters.VariantQueryParams parameters);
+
+        Task<PagedResult<ProductVariant>> GetVariantsForRestockListingAsync(RestockVariantQueryParams parameters);
         Task<ProductVariant?> GetVariantByIdAsync(int id);
         Task<ProductVariant?> GetVariantByIdForUpdateAsync(int id);
         Task UpdateVariantAsync(ProductVariant variant);

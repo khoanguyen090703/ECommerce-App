@@ -1143,8 +1143,7 @@
   background: #dbeafe;
 }
 
-.orders-status-badge--delivered,
-.orders-status-badge--completed {
+.orders-status-badge--delivered {
   color: #166534;
   background: #dcfce7;
 }
@@ -1152,11 +1151,6 @@
 .orders-status-badge--cancelled {
   color: #991b1b;
   background: #fee2e2;
-}
-
-.orders-status-badge--returned {
-  color: #374151;
-  background: #e5e7eb;
 }
 
 .orders-view-btn {
@@ -1180,6 +1174,26 @@
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 14px;
+}
+
+.order-detail-header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.order-detail-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.orders-view-btn--danger {
+  border-color: #fecaca;
+  color: #b91c1c;
+  background: #fff;
 }
 
 .order-detail-grid {
@@ -1498,10 +1512,67 @@
 
 .product-detail-card-header {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+}
+
+.product-detail-card-header-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.product-detail-title-group {
+  display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
-  justify-content: space-between;
+}
+
+.product-detail-status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.product-detail-status-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 650;
+  color: #334155;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.product-detail-status-btn svg {
+  flex-shrink: 0;
+}
+
+.product-detail-status-btn--inactive:hover {
+  border-color: #fdba74;
+  color: #c2410c;
+  background: #fffbeb;
+}
+
+.product-detail-status-btn--archived:hover {
+  border-color: #94a3b8;
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+.product-detail-status-btn--active:hover {
+  border-color: #86efac;
+  color: #166534;
+  background: #f0fdf4;
 }
 
 .product-detail-name {
@@ -1663,6 +1734,33 @@
   background: #e0ecff;
   border-color: #93c5fd;
   color: #1d4ed8;
+}
+
+.variant-card-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.variant-card-discontinue-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 12px;
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #b91c1c;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.variant-card-discontinue-btn:hover {
+  background: #ffe4e6;
+  border-color: #f87171;
 }
 
 .variant-card-dl {
@@ -2115,4 +2213,125 @@
   font-size: 12px;
   color: #94a3b8;
   background: #1e293b;
+}
+
+.variant-restock-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin: 0;
+  padding: 14px 20px 18px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.variant-restock-submit-btn {
+  min-height: 44px;
+  padding: 11px 26px;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.variant-restock-submit-btn:disabled {
+  box-shadow: none;
+}
+
+@media (max-width: 520px) {
+  .variant-restock-actions {
+    justify-content: stretch;
+  }
+
+  .variant-restock-submit-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+.variant-restock-page .restock-qty-input {
+  max-width: 7rem;
+  padding: 0.35rem 0.5rem;
+}
+
+/* Modal chọn variant: không vượt quá màn hình, bảng cuộn dọc */
+.variant-restock-picker-modal {
+  display: flex;
+  flex-direction: column;
+  max-height: min(90vh, calc(100vh - 32px));
+  width: min(920px, calc(100vw - 32px));
+  overflow: hidden;
+}
+
+.variant-restock-picker-modal.modal--wide {
+  width: min(920px, calc(100vw - 32px));
+}
+
+.variant-restock-picker-title {
+  flex-shrink: 0;
+}
+
+.variant-restock-picker-toolbar.product-variants-toolbar {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+
+.variant-restock-picker-error {
+  flex-shrink: 0;
+}
+
+.variant-restock-picker-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.variant-restock-picker-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  padding: 24px;
+}
+
+.variant-restock-picker-table-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.variant-restock-picker-pager {
+  flex-shrink: 0;
+  margin-top: 12px;
+}
+
+.variant-restock-picker-actions {
+  flex-shrink: 0;
+  margin-top: 12px;
+}
+
+/* Tiêu đề khối danh sách nhập kho — padding + xuống dòng để không bị cắt */
+.variant-restock-list-card .variant-restock-section-head {
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(to bottom, #fafbfc, #f8fafc);
+}
+
+.variant-restock-section-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.35;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.variant-restock-list-empty {
+  margin: 0;
+  padding: 18px 20px 22px;
 }

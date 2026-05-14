@@ -64,7 +64,7 @@ const LoginPage = () => {
       <section className="login-banner" aria-label="Banner Aura Mystique">
         <div className="login-banner-overlay" />
         <div className="login-banner-content">
-          <p className="login-tagline">Admin Portal</p>
+          <p className="login-tagline">Cổng quản trị</p>
           <h1>Aura Mystique</h1>
           <p className="login-subtitle">
             Khám phá mùi hương mang dấu ấn riêng của bạn với vẻ đẹp thanh lịch và sang trọng.

@@ -65,12 +65,16 @@
                     foreach (var category in Model.Categories)
                     {
                         <div class="swiper-slide">
-                            <div class="category-item-fixed" data-id="@category.Id">
+                            <a class="category-item-fixed text-decoration-none text-reset"
+                               asp-page="/ProductVariants/ProductVariantsList"
+                               asp-route-Category="@category.Name"
+                               asp-route-PageNumber="1"
+                               data-id="@category.Id">
                                 <div class="img-wrapper">
                                     <img src="@(string.IsNullOrEmpty(category.ImageUrl) ? "https://orchard.vn/wp-content/uploads/2024/07/category-nuoc-hoa-nam.webp" : category.ImageUrl)" alt="@category.Name">
                                 </div>
                                 <h3 class="category-title-fixed h6">@category.Name</h3>
-                            </div>
+                            </a>
                         </div>
                     }
                 }

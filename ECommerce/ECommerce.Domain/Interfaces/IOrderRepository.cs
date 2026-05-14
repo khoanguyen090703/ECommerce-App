@@ -19,6 +19,8 @@ namespace ECommerce.Domain.Interfaces
 
         Task<PagedResult<Order>> GetAsync(OrderQueryParams parameters, CancellationToken cancellationToken = default);
 
+        Task<Order?> GetByIdForUpdateAsync(int id, CancellationToken cancellationToken = default);
+
         Task<Order?> GetDetailsByIdAsync(int id, CancellationToken cancellationToken = default);
     }
 }

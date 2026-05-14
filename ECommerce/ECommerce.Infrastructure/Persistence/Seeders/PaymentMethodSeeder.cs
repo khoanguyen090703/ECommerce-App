@@ -1,8 +1,5 @@
 ﻿using ECommerce.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace ECommerce.Infrastructure.Persistence.Seeders
 {
@@ -10,17 +7,13 @@ namespace ECommerce.Infrastructure.Persistence.Seeders
     {
         public static async Task SeedAsync(AppDbContext context)
         {
-            if (!await context.PaymentMethods.AnyAsync())
+            foreach (var name in new[] { "VnPay", "COD", "Stripe" })
             {
-                var paymentMethods = new List<PaymentMethod>
-                {
-                    new PaymentMethod { Name = "VnPay" },
-                    new PaymentMethod { Name = "COD" }
-                };
-
-                await context.PaymentMethods.AddRangeAsync(paymentMethods);
-                await context.SaveChangesAsync();
+                if (!await context.PaymentMethods.AnyAsync(pm => pm.Name == name))
+                    await context.PaymentMethods.AddAsync(new PaymentMethod { Name = name });
             }
+
+            await context.SaveChangesAsync();
         }
     }
 }

@@ -1,4 +1,5 @@
 using ECommerce.SharedViewModels.DTOs.Auth;
+using ECommerce.Web.Auth;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
@@ -10,21 +11,30 @@ namespace ECommerce.Web.Pages.Auth
     {
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
+        private readonly IAuthSessionManager _authSessionManager;
 
-        public SignInModel(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+        public SignInModel(
+            IHttpClientFactory httpClientFactory,
+            IConfiguration configuration,
+            IAuthSessionManager authSessionManager)
         {
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
+            _authSessionManager = authSessionManager;
         }
 
         [BindProperty]
         public SignInInputModel Input { get; set; } = new();
+
+        [BindProperty(SupportsGet = true)]
+        public string? ReturnUrl { get; set; }
 
         [TempData]
         public string? SuccessMessage { get; set; }
 
         public void OnGet()
         {
+            ReturnUrl = AuthReturnUrl.Normalize(ReturnUrl);
         }
 
         public async Task<IActionResult> OnPostAsync()
@@ -53,30 +63,14 @@ namespace ECommerce.Web.Pages.Auth
                     return Page();
                 }
 
-                if (!string.IsNullOrWhiteSpace(authResponse.Token))
+                if (!string.IsNullOrWhiteSpace(authResponse.Token) && !string.IsNullOrWhiteSpace(authResponse.RefreshToken))
                 {
-                    Response.Cookies.Append("access_token", authResponse.Token, new CookieOptions
-                    {
-                        HttpOnly = true,
-                        Secure = Request.IsHttps,
-                        SameSite = SameSiteMode.Strict,
-                        Expires = DateTimeOffset.UtcNow.AddHours(1)
-                    });
-                }
-
-                if (!string.IsNullOrWhiteSpace(authResponse.RefreshToken))
-                {
-                    Response.Cookies.Append("refresh_token", authResponse.RefreshToken, new CookieOptions
-                    {
-                        HttpOnly = true,
-                        Secure = Request.IsHttps,
-                        SameSite = SameSiteMode.Strict,
-                        Expires = DateTimeOffset.UtcNow.AddDays(7)
-                    });
+                    _authSessionManager.UpdateTokens(HttpContext, authResponse.Token, authResponse.RefreshToken);
                 }
 
                 SuccessMessage = authResponse.Message;
-                return RedirectToPage("/Index");
+                var destination = AuthReturnUrl.Normalize(ReturnUrl) ?? "/Index";
+                return Redirect(destination);
             }
             catch
             {

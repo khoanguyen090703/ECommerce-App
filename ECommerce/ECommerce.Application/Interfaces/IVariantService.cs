@@ -1,5 +1,6 @@
 using ECommerce.Domain.Common;
 using ECommerce.Domain.QueryParameters;
+using ECommerce.SharedViewModels.DTOs.Request;
 using ECommerce.SharedViewModels.DTOs.Response;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -19,5 +20,11 @@ namespace ECommerce.Application.Interfaces
         Task<int> CreateVariantAsync(int productId, ECommerce.SharedViewModels.DTOs.Request.CreateVariantRequest request);
         Task<List<VariantResponse>> GetFeaturedVariantsAsync();
         Task SetFeaturedVariantsAsync(IEnumerable<int> variantIds);
+
+        Task<PagedResult<VariantStockPanelResponse>> GetVariantsForStockRestockAsync(RestockVariantQueryParams parameters);
+
+        Task<VariantStockPanelResponse?> GetVariantStockPanelByIdAsync(int variantId);
+
+        Task AddStockToVariantsAsync(AddVariantStockBatchRequest request);
     }
 }

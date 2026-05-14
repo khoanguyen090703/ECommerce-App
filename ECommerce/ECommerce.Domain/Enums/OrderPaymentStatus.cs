@@ -9,6 +9,7 @@ namespace ECommerce.Domain.Enums
         Unpaid,
         Paid,
         PartiallyRefunded,
-        FullyRefunded
+        FullyRefunded,
+        Failed
     }
 }

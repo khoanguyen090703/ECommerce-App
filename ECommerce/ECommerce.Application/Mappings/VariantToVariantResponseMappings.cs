@@ -17,5 +17,19 @@ namespace ECommerce.Application.Mappings
                 ImageUrl = v.Images.FirstOrDefault()?.Url ?? string.Empty
             };
         }
+
+        public static VariantStockPanelResponse ToVariantStockPanelResponse(this ProductVariant v)
+        {
+            return new VariantStockPanelResponse
+            {
+                Id = v.Id,
+                Name = v.Name,
+                FirstImageUrl = v.Images.FirstOrDefault()?.Url ?? string.Empty,
+                StockQuantity = v.StockQuantity,
+                Status = v.Status.ToString(),
+                ProductId = v.Product.Id,
+                ProductName = v.Product.Name
+            };
+        }
     }
 }

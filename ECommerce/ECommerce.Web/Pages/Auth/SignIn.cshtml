@@ -16,6 +16,7 @@
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3"></div>
 
                         <form method="post" novalidate>
+                            <input type="hidden" asp-for="ReturnUrl" />
                             <div class="mb-3">
                                 <label asp-for="Input.Email" class="form-label"></label>
                                 <input asp-for="Input.Email" class="form-control" placeholder="email@example.com" autocomplete="email" />
