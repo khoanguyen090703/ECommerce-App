@@ -13,20 +13,9 @@ import { OrderDetailPage } from './pages/OrderDetailPage'
 import { OrdersPage } from './pages/OrdersPage'
 import { VariantRestockPage } from './pages/VariantRestockPage'
 import  LoginPage  from './pages/LoginPage'
-import { OverviewPage } from './pages/OverviewPage'
 import './App.css'
 
 const navItems = [
-  {
-    label: 'Tổng quan',
-    to: '/dashboard',
-    end: true,
-    icon: (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6v-9h-6v9Zm0-16v5h6V4h-6Z" />
-      </svg>
-    ),
-  },
   {
     label: 'Khách hàng',
     to: '/customers',
@@ -39,6 +28,7 @@ const navItems = [
   {
     label: 'Sản phẩm',
     to: '/products',
+    end: true,
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="m21 8.5-9-5-9 5v7l9 5 9-5v-7ZM12 5.78l5.37 2.98L12 11.74 6.63 8.76 12 5.78Zm-7 4.68 6 3.34v4.48l-6-3.34v-4.48Zm8 7.82V13.8l6-3.34v4.48l-6 3.34Z" />
@@ -73,15 +63,6 @@ const navItems = [
     ),
   },
 ]
-
-const pageTitles = {
-  overview: 'Tổng quan',
-  customers: 'Khách hàng',
-  products: 'Sản phẩm',
-  categories: 'Danh mục',
-  orders: 'Đơn hàng',
-  restock: 'Nhập kho',
-}
 
 function Sidebar() {
   return (
@@ -215,8 +196,8 @@ function AdminLayout() {
         <Header />
         <main className="content">
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<OverviewPage />} />
+            <Route path="/" element={<Navigate to="/products" replace />} />
+            <Route path="/dashboard" element={<Navigate to="/products" replace />} />
             <Route path="/customers" element={<CustomersPage />} />
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/products/new" element={<ProductCreatePage />} />
@@ -234,12 +215,12 @@ function AdminLayout() {
 }
 
 function RootRedirect() {
-  return <Navigate to={getStoredAccessToken() ? '/dashboard' : '/login'} replace />
+  return <Navigate to={getStoredAccessToken() ? '/products' : '/login'} replace />
 }
 
 function LoginRoute() {
   if (getStoredAccessToken()) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/products" replace />
   }
   return <LoginPage />
 }

@@ -33,7 +33,7 @@ const LoginPage = () => {
       setAuthTokens(token, refreshToken, rememberMe)
 
       toast.success('Đăng nhập thành công')
-      navigate('/dashboard', { replace: true })
+      navigate('/products', { replace: true })
     } catch (err) {
       let msg
       if (err.response) {
