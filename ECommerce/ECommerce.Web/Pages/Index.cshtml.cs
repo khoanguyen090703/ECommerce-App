@@ -1,3 +1,4 @@
+using ECommerce.Web.Auth;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Text.Json;
@@ -8,12 +9,10 @@ namespace ECommerce.Web.Pages
     public class IndexModel : PageModel
     {
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IConfiguration _configuration;
 
-        public IndexModel(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+        public IndexModel(IHttpClientFactory httpClientFactory)
         {
             _httpClientFactory = httpClientFactory;
-            _configuration = configuration;
         }
 
         public List<CategoryResponse> Categories { get; set; } = new();
@@ -23,9 +22,8 @@ namespace ECommerce.Web.Pages
         {
             try
             {
-                var client = _httpClientFactory.CreateClient();
-                var apiUrl = _configuration["ApiBaseUrl"] ?? "http://localhost:5206";
-                var response = await client.GetAsync($"{apiUrl}/api/categories/all");
+                var client = _httpClientFactory.CreateClient(AuthConstants.ApiAnonymousClientName);
+                var response = await client.GetAsync("api/categories/all");
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -33,7 +31,7 @@ namespace ECommerce.Web.Pages
                     Categories = JsonSerializer.Deserialize<List<CategoryResponse>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
                 }
 
-                var featuredResponse = await client.GetAsync($"{apiUrl}/api/variants/featured");
+                var featuredResponse = await client.GetAsync("api/variants/featured");
                 if (featuredResponse.IsSuccessStatusCode)
                 {
                     var featuredContent = await featuredResponse.Content.ReadAsStringAsync();

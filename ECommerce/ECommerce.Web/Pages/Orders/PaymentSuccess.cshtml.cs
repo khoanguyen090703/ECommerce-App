@@ -1,3 +1,4 @@
+using ECommerce.Web.Auth;
 using System.Net;
 using System.Text.Json;
 using ECommerce.SharedViewModels.DTOs.Response;
@@ -43,6 +44,8 @@ public class PaymentSuccessModel : PageModel
         OrderLoaded
         && !string.Equals(PaymentStatus, "Paid", StringComparison.OrdinalIgnoreCase);
 
+    public string? PaymentSyncNote { get; private set; }
+
     public async Task OnGetAsync(CancellationToken cancellationToken = default)
     {
         SessionId = Request.Query["session_id"].FirstOrDefault();
@@ -64,7 +67,7 @@ public class PaymentSuccessModel : PageModel
 
         try
         {
-            var client = _httpClientFactory.CreateClient();
+            var client = _httpClientFactory.CreateClient(AuthConstants.ApiClientName);
             using var response = await client.GetAsync($"api/orders/{id}", timeoutCts.Token);
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
@@ -120,6 +123,9 @@ public class PaymentSuccessModel : PageModel
             OrderLoaded = true;
             PaymentStatus = order.PaymentStatus;
             TotalAmount = order.TotalAmount;
+
+            if (ShouldSyncPaymentInBackground)
+                await TrySyncPaymentStatusAsync(id, timeoutCts.Token);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
@@ -141,5 +147,35 @@ public class PaymentSuccessModel : PageModel
 
             PageError = "Không kết nối được máy chủ đơn hàng. Vui lòng thử lại sau.";
         }
+    }
+
+    private async Task TrySyncPaymentStatusAsync(int orderId, CancellationToken cancellationToken)
+    {
+        var client = _httpClientFactory.CreateClient(AuthConstants.ApiClientName);
+
+        for (var attempt = 0; attempt < 8; attempt++)
+        {
+            using var response = await client.GetAsync($"api/payments/stripe/orders/{orderId}/status", cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                using var document = JsonDocument.Parse(json);
+                var status = document.RootElement.TryGetProperty("orderPaymentStatus", out var camel)
+                    ? camel.GetString()
+                    : document.RootElement.TryGetProperty("OrderPaymentStatus", out var pascal)
+                        ? pascal.GetString()
+                        : null;
+
+                if (string.Equals(status, "Paid", StringComparison.OrdinalIgnoreCase))
+                {
+                    PaymentStatus = status;
+                    return;
+                }
+            }
+
+            await Task.Delay(700, cancellationToken);
+        }
+
+        PaymentSyncNote = "Nếu tiền đã trừ, trạng thái đơn sẽ cập nhật sau vài phút. Bạn có thể tải lại trang chi tiết đơn hàng.";
     }
 }

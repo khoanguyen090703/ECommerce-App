@@ -10,7 +10,11 @@ namespace ECommerce.Infrastructure.Persistence.Seeders
             foreach (var name in new[] { "VnPay", "COD", "Stripe" })
             {
                 if (!await context.PaymentMethods.AnyAsync(pm => pm.Name == name))
-                    await context.PaymentMethods.AddAsync(new PaymentMethod { Name = name });
+                    await context.PaymentMethods.AddAsync(new PaymentMethod 
+                    { 
+                        Name = name, 
+                        IsActive = name.Equals("Stripe") ? true : false 
+                    });
             }
 
             await context.SaveChangesAsync();

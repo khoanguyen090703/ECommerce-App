@@ -1,3 +1,4 @@
+using ECommerce.Web.Auth;
 using System.Net;
 using System.Text.Json;
 using ECommerce.SharedViewModels.DTOs.Response;
@@ -44,7 +45,7 @@ public class OrderSuccessModel : PageModel
 
         try
         {
-            var client = _httpClientFactory.CreateClient();
+            var client = _httpClientFactory.CreateClient(AuthConstants.ApiClientName);
             using var response = await client.GetAsync($"api/orders/{id}", timeoutCts.Token);
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)

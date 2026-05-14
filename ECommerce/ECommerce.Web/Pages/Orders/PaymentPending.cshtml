@@ -1,5 +1,6 @@
 @page "/Orders/PaymentPending"
 @model ECommerce.Web.Pages.Orders.PaymentPendingModel
+@using ECommerce.Web.Helpers
 @{
     ViewData["Title"] = "Thanh toán chưa hoàn tất";
 }
@@ -28,76 +29,25 @@
                         }
                     </p>
                     <p class="small text-muted mb-4">
-                        Trạng thái thanh toán hiện tại: <strong>@(Model.PaymentStatus ?? "—")</strong>.
+                        Trạng thái thanh toán hiện tại: <strong>@WebDisplay.FormatPaymentStatus(Model.PaymentStatus)</strong>.
                         Bạn có thể thanh toán lại (thẻ / Stripe) nếu phương thức đơn hàng cho phép.
                     </p>
-                    <div id="payPendingError" class="alert alert-danger d-none text-start small" role="alert"></div>
+                    @if (!string.IsNullOrWhiteSpace(Model.ActionError))
+                    {
+                        <div class="alert alert-danger text-start small" role="alert">@Model.ActionError</div>
+                    }
                     <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
                         @if (Model.CanRetryOnlinePayment)
                         {
-                            <button type="button" class="btn btn-primary" id="btnPayPendingAgain">Thanh toán lại</button>
+                            <form method="post" asp-page-handler="PayAgain" asp-route-orderId="@oid" class="d-inline">
+                                <button type="submit" class="btn btn-primary">Thanh toán lại</button>
+                            </form>
                         }
                         <a class="btn btn-outline-secondary" asp-page="/Orders/Details" asp-route-id="@oid">Xem chi tiết đơn hàng</a>
                         <a class="btn btn-outline-secondary" asp-page="/Orders/Index">Đơn hàng của tôi</a>
                     </div>
                 </div>
             </div>
-
-            @if (Model.CanRetryOnlinePayment)
-            {
-                <script>
-                    (function () {
-                        const orderId = @oid;
-                        const errEl = document.getElementById('payPendingError');
-                        const btn = document.getElementById('btnPayPendingAgain');
-
-                        function show(el, yes) {
-                            if (!el) return;
-                            el.classList.toggle('d-none', !yes);
-                        }
-
-                        async function fetchJson(url, options) {
-                            const res = await fetch(url, Object.assign({
-                                credentials: 'same-origin',
-                                headers: { 'Accept': 'application/json' }
-                            }, options || {}));
-                            const text = await res.text();
-                            let data = null;
-                            if (text) { try { data = JSON.parse(text); } catch { data = null; } }
-                            if (!res.ok) {
-                                const err = new Error('HTTP ' + res.status);
-                                err.data = data;
-                                throw err;
-                            }
-                            return data;
-                        }
-
-                        document.addEventListener('DOMContentLoaded', function () {
-                            if (!btn) return;
-                            btn.addEventListener('click', async function () {
-                                show(errEl, false);
-                                btn.disabled = true;
-                                try {
-                                    const checkout = await fetchJson('/api/payments/stripe/orders/' + orderId + '/retry', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                                        body: '{}'
-                                    });
-                                    const url = checkout.checkoutUrl ?? checkout.CheckoutUrl;
-                                    if (url) window.location.href = url;
-                                    else throw new Error('Không nhận được liên kết thanh toán.');
-                                } catch (e) {
-                                    const msg = e?.data?.message || e?.data?.title || e?.message || 'Không tạo được phiên thanh toán.';
-                                    if (errEl) errEl.textContent = msg;
-                                    show(errEl, true);
-                                } finally {
-                                    btn.disabled = false;
-                                }
-                            });
-                        });
-                    })();
-                </script>
-            }
         }
     </div>
 </div>

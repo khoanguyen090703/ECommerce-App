@@ -95,7 +95,7 @@ namespace ECommerce.Tests.Api.Controllers
             // Arrange
             var parameters = new BrandQueryParams { PageNumber = 2, PageSize = 5, SearchTerm = "nike" };
             var items = new List<BrandResponse> { new BrandResponse { Id = 1, Name = "Nike" } };
-            var paged = new PagedResult<BrandResponse>(items, count: 11, pageNumber: 2, pageSize: 5);
+            var paged = new PagedResult<BrandResponse>(items, totalCount: 11, pageNumber: 2, pageSize: 5);
             _brandService.Setup(service => service.GetBrandsAsync(It.IsAny<BrandQueryParams>())).ReturnsAsync(paged);
             var controller = new BrandController(_brandService.Object);
 

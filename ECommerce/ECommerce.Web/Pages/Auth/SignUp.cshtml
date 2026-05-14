@@ -30,19 +30,13 @@
 
                             <div class="mb-3">
                                 <label asp-for="Input.Password" class="form-label"></label>
-                                <div class="input-group">
-                                    <input asp-for="Input.Password" class="form-control" autocomplete="new-password" id="signup-password" />
-                                    <button class="btn btn-outline-secondary" type="button" id="toggle-password">Hiện</button>
-                                </div>
+                                <input asp-for="Input.Password" class="form-control" type="password" autocomplete="new-password" />
                                 <span asp-validation-for="Input.Password" class="text-danger"></span>
                             </div>
 
                             <div class="mb-4">
                                 <label asp-for="Input.ConfirmPassword" class="form-label"></label>
-                                <div class="input-group">
-                                    <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" id="signup-confirm-password" />
-                                    <button class="btn btn-outline-secondary" type="button" id="toggle-confirm-password">Hiện</button>
-                                </div>
+                                <input asp-for="Input.ConfirmPassword" class="form-control" type="password" autocomplete="new-password" />
                                 <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
                             </div>
 
@@ -64,22 +58,4 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script>
-        (function () {
-            function wirePasswordToggle(inputId, buttonId) {
-                const input = document.getElementById(inputId);
-                const button = document.getElementById(buttonId);
-                if (!input || !button) return;
-
-                button.addEventListener("click", function () {
-                    const isPassword = input.type === "password";
-                    input.type = isPassword ? "text" : "password";
-                    button.textContent = isPassword ? "Ẩn" : "Hiện";
-                });
-            }
-
-            wirePasswordToggle("signup-password", "toggle-password");
-            wirePasswordToggle("signup-confirm-password", "toggle-confirm-password");
-        })();
-    </script>
 }

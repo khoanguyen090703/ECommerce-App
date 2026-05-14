@@ -8,29 +8,24 @@ namespace ECommerce.Web.ViewComponents;
 
 public class UserAvatarViewComponent : ViewComponent
 {
-    private readonly IAuthSessionManager _authSessionManager;
     private readonly IHttpClientFactory _httpClientFactory;
 
-    public UserAvatarViewComponent(IHttpClientFactory httpClientFactory, IAuthSessionManager authSessionManager)
+    public UserAvatarViewComponent(IHttpClientFactory httpClientFactory)
     {
         _httpClientFactory = httpClientFactory;
-        _authSessionManager = authSessionManager;
     }
 
     public async Task<IViewComponentResult> InvokeAsync()
     {
         var model = new UserAvatarViewModel();
-        var accessToken = _authSessionManager.GetAccessToken(HttpContext);
 
-        if (string.IsNullOrWhiteSpace(accessToken))
+        if (HttpContext.User.Identity?.IsAuthenticated != true)
             return View(model);
 
         try
         {
-            var client = _httpClientFactory.CreateClient();
-            using var request = new HttpRequestMessage(HttpMethod.Get, "api/users/me");
-
-            using var response = await client.SendAsync(request);
+            var client = _httpClientFactory.CreateClient(AuthConstants.ApiClientName);
+            using var response = await client.GetAsync("api/users/me");
             if (!response.IsSuccessStatusCode)
                 return View(model);
 

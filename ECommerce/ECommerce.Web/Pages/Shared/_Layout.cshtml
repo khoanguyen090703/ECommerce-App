@@ -353,6 +353,38 @@
                     inst.show();
                 });
             };
+
+            document.addEventListener('submit', function (event) {
+                const form = event.target.closest('.js-cancel-order-form');
+                if (!form) return;
+
+                if (form.dataset.confirmed === '1') {
+                    form.dataset.confirmed = '';
+                    return;
+                }
+
+                event.preventDefault();
+
+                const submit = async function () {
+                    if (typeof window.confirmInModal !== 'function') {
+                        return;
+                    }
+
+                    const confirmed = await window.confirmInModal('Bạn có chắc muốn hủy đơn hàng này?');
+                    if (!confirmed) {
+                        return;
+                    }
+
+                    form.dataset.confirmed = '1';
+                    if (typeof form.requestSubmit === 'function') {
+                        form.requestSubmit();
+                    } else {
+                        form.submit();
+                    }
+                };
+
+                void submit();
+            });
         </script>
         <script src="~/js/plugins.js"></script>
         <script src="~/js/script.js"></script>

@@ -1,7 +1,8 @@
 @page "/orders"
 @model ECommerce.Web.Pages.Orders.IndexModel
+@using ECommerce.Web.Helpers
 @{
-    ViewData["Title"] = "Chi tiết đơn hàng";
+    ViewData["Title"] = "Đơn hàng của tôi";
 }
 
 <div class="container py-5">
@@ -14,392 +15,120 @@
 
     <div class="card shadow-sm border-0 mb-3">
         <div class="card-body p-3">
-            <div id="statusFilterBar" class="d-flex flex-wrap gap-2"></div>
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var filter in Model.Filters)
+                {
+                    var active = string.Equals(Model.Status ?? string.Empty, filter.Key, StringComparison.OrdinalIgnoreCase);
+                    <a class="btn btn-sm @(active ? "btn-dark" : "btn-outline-dark")"
+                       asp-page="/Orders/Index"
+                       asp-route-status="@(string.IsNullOrEmpty(filter.Key) ? null : filter.Key)"
+                       asp-route-pageNumber="1">@filter.Label</a>
+                }
+            </div>
         </div>
     </div>
 
-    <div id="myOrdersLoading" class="text-center text-muted py-5">
-        <span class="spinner-border me-2" role="status" aria-hidden="true"></span>Đang tải đơn hàng...
-    </div>
+    @if (!string.IsNullOrWhiteSpace(Model.ActionError))
+    {
+        <div class="alert alert-warning" role="alert">@Model.ActionError</div>
+    }
 
-    <div id="myOrdersError" class="alert alert-warning d-none" role="alert"></div>
-    <div id="myOrdersEmpty" class="alert alert-light border d-none" role="status">
-        Không có đơn hàng nào phù hợp bộ lọc.
-    </div>
-    <div id="myOrdersList" class="vstack gap-3"></div>
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <div class="alert alert-warning" role="alert">@Model.ErrorMessage</div>
+    }
+    else if (!Model.Orders.Items.Any())
+    {
+        <div class="alert alert-light border" role="status">Không có đơn hàng nào phù hợp bộ lọc.</div>
+    }
+    else
+    {
+        <div class="vstack gap-3">
+            @foreach (var order in Model.Orders.Items)
+            {
+                var firstItem = order.OrderItems.FirstOrDefault();
+                var hiddenCount = Math.Max(order.OrderItems.Count - 1, 0);
 
-    <nav id="myOrdersPagination" class="mt-4 d-none" aria-label="Order pagination">
-        <ul class="pagination justify-content-center mb-0" id="myOrdersPaginationList"></ul>
-    </nav>
-</div>
-
-@section Scripts {
-    <script>
-        (function () {
-            const PAGE_SIZE = 5;
-            const statuses = [
-                { key: '', label: 'Tất cả' },
-                { key: 'Pending', label: 'Pending' },
-                { key: 'Processing', label: 'Processing' },
-                { key: 'Shipping', label: 'Shipping' },
-                { key: 'Delivered', label: 'Delivered' },
-                { key: 'Cancelled', label: 'Cancelled' }
-            ];
-
-            const state = {
-                status: '',
-                pageNumber: 1,
-                pageSize: PAGE_SIZE,
-                sortBy: 'orderdate_desc',
-                paged: null
-            };
-
-            const els = {
-                filterBar: document.getElementById('statusFilterBar'),
-                loading: document.getElementById('myOrdersLoading'),
-                error: document.getElementById('myOrdersError'),
-                empty: document.getElementById('myOrdersEmpty'),
-                list: document.getElementById('myOrdersList'),
-                pagination: document.getElementById('myOrdersPagination'),
-                paginationList: document.getElementById('myOrdersPaginationList')
-            };
-
-            function show(el, yes) {
-                if (!el) return;
-                el.classList.toggle('d-none', !yes);
-            }
-
-            function setError(message) {
-                if (!els.error) return;
-                els.error.textContent = message || 'Không tải được danh sách đơn hàng.';
-                show(els.error, true);
-            }
-
-            function clearError() {
-                if (!els.error) return;
-                els.error.textContent = '';
-                show(els.error, false);
-            }
-
-            function formatVnd(value) {
-                const n = Number(value) || 0;
-                try { return new Intl.NumberFormat('vi-VN').format(n) + ' ₫'; } catch { return n + ' ₫'; }
-            }
-
-            function formatDate(value) {
-                if (!value) return '—';
-                const d = new Date(value);
-                if (Number.isNaN(d.getTime())) return '—';
-                return d.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
-            }
-
-            function getStatusBadgeClass(status) {
-                switch ((status || '').toLowerCase()) {
-                    case 'pending': return 'bg-warning text-dark';
-                    case 'processing': return 'bg-info text-dark';
-                    case 'shipping': return 'bg-primary';
-                    case 'delivered': return 'bg-success';
-                    case 'cancelled': return 'bg-danger';
-                    default: return 'bg-dark';
-                }
-            }
-
-            async function fetchJson(url, options) {
-                const response = await fetch(url, Object.assign({
-                    credentials: 'same-origin',
-                    headers: { 'Accept': 'application/json' }
-                }, options || {}));
-
-                const text = await response.text();
-                let data = null;
-                if (text) {
-                    try { data = JSON.parse(text); } catch { data = null; }
-                }
-
-                if (!response.ok) {
-                    const err = new Error('HTTP ' + response.status);
-                    err.status = response.status;
-                    err.data = data;
-                    throw err;
-                }
-                return data;
-            }
-
-            function isValidStatus(status) {
-                return statuses.some((s) => s.key.toLowerCase() === String(status || '').toLowerCase());
-            }
-
-            function readStateFromUrl() {
-                const params = new URLSearchParams(window.location.search);
-                const status = (params.get('status') || '').trim();
-                const pageNumber = Number.parseInt(params.get('pageNumber') || '1', 10);
-
-                state.status = isValidStatus(status) ? status : '';
-                state.pageNumber = Number.isFinite(pageNumber) && pageNumber > 0 ? pageNumber : 1;
-            }
-
-            function writeUrlFromState(useReplace = false) {
-                const params = new URLSearchParams();
-                if (state.status) params.set('status', state.status);
-                if (state.pageNumber > 1) params.set('pageNumber', String(state.pageNumber));
-
-                const query = params.toString();
-                const nextUrl = `${window.location.pathname}${query ? `?${query}` : ''}`;
-                const method = useReplace ? 'replaceState' : 'pushState';
-                window.history[method]({ status: state.status, pageNumber: state.pageNumber }, '', nextUrl);
-            }
-
-            function normalizePaged(raw) {
-                return {
-                    items: raw?.items ?? raw?.Items ?? [],
-                    pageNumber: Number(raw?.pageNumber ?? raw?.PageNumber ?? 1) || 1,
-                    pageSize: Number(raw?.pageSize ?? raw?.PageSize ?? PAGE_SIZE) || PAGE_SIZE,
-                    totalCount: Number(raw?.totalCount ?? raw?.TotalCount ?? 0) || 0,
-                    totalPages: Number(raw?.totalPages ?? raw?.TotalPages ?? 1) || 1
-                };
-            }
-
-            function createOrderItemRow(item) {
-                const productName = item?.productName ?? item?.ProductName ?? '';
-                const quantity = Number(item?.quantity ?? item?.Quantity ?? 0) || 0;
-                const unitPrice = Number(item?.unitPrice ?? item?.UnitPrice ?? 0) || 0;
-                const total = quantity * unitPrice;
-                const imageUrl = item?.imageUrl ?? item?.ImageUrl ?? '';
-
-                const row = document.createElement('div');
-                row.className = 'd-flex align-items-center gap-3 border rounded p-2';
-                row.innerHTML = `
-                    <div class="flex-shrink-0">
-                        ${imageUrl
-                            ? `<img src="${imageUrl}" alt="" width="52" height="52" class="rounded border" style="object-fit:cover;" />`
-                            : `<div class="rounded border bg-light" style="width:52px;height:52px;"></div>`}
-                    </div>
-                    <div class="flex-grow-1 min-w-0">
-                        <div class="fw-semibold text-truncate" title="${productName}">${productName}</div>
-                        <div class="small text-muted">SL: ${quantity} • ${formatVnd(unitPrice)} / sp</div>
-                    </div>
-                    <div class="fw-semibold text-end">${formatVnd(total)}</div>
-                `;
-                return row;
-            }
-
-            function renderOrders(items) {
-                els.list.innerHTML = '';
-
-                items.forEach((order) => {
-                    const id = order?.id ?? order?.Id;
-                    const status = order?.status ?? order?.Status ?? 'Unknown';
-                    const paymentStatus = order?.paymentStatus ?? order?.PaymentStatus ?? '';
-                    const canPay = !!(order?.canRetryOnlinePayment ?? order?.CanRetryOnlinePayment);
-                    const total = order?.totalAmount ?? order?.TotalAmount ?? 0;
-                    const orderItems = order?.orderItems ?? order?.OrderItems ?? [];
-                    const orderDate = order?.orderDate ?? order?.OrderDate;
-                    const firstItem = orderItems[0];
-                    const hasMore = orderItems.length > 1;
-
-                    const card = document.createElement('article');
-                    card.className = 'card shadow-sm border-0';
-                    card.innerHTML = `
-                        <div class="card-body p-3 p-md-4">
-                            <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
-                                <div>
-                                    <div class="fw-bold">Đơn hàng #${id}</div>
-                                    <div class="small text-muted">Ngày đặt: ${formatDate(orderDate)}</div>
-                                </div>
-                                <span class="badge ${getStatusBadgeClass(status)}">${status}</span>
+                <article class="card shadow-sm border-0">
+                    <div class="card-body p-3 p-md-4">
+                        <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
+                            <div>
+                                <div class="fw-bold">Đơn hàng #@order.Id</div>
+                                <div class="small text-muted">Ngày đặt: @WebDisplay.FormatDate(order.OrderDate)</div>
                             </div>
-                            <div class="small text-muted mb-2">Thanh toán: <span class="fw-semibold text-dark">${paymentStatus || '—'}</span></div>
-                            ${canPay ? '<div class="mb-2"><button type="button" class="btn btn-sm btn-primary js-pay-again">Thanh toán lại</button></div>' : ''}
-                            ${String(status).toLowerCase() === 'pending'
-                                ? '<div class="mb-2"><button type="button" class="btn btn-sm btn-outline-danger js-cancel-order">Hủy đơn</button></div>'
-                                : ''}
-                            <div class="vstack gap-2 js-items-wrap"></div>
-                            <div class="d-flex justify-content-between align-items-center mt-3">
-                                <button type="button" class="btn btn-link p-0 text-decoration-none js-toggle-items ${hasMore ? '' : 'd-none'}">
-                                    Xem thêm ${Math.max(orderItems.length - 1, 0)} sản phẩm
-                                </button>
-                                <div class="d-flex align-items-center gap-3">
-                                    <a class="btn btn-sm btn-outline-secondary" href="/orders/${id}">Xem chi tiết</a>
-                                    <div class="fw-semibold">Tổng: ${formatVnd(total)}</div>
-                                </div>
+                            <span class="badge @OrderStatusStyles.BadgeClass(order.Status)">@OrderStatusStyles.FormatStatus(order.Status)</span>
+                        </div>
+
+                        <div class="small text-muted mb-2">Thanh toán: <span class="fw-semibold text-dark">@WebDisplay.FormatPaymentStatus(order.PaymentStatus)</span></div>
+
+                        @if (order.CanRetryOnlinePayment)
+                        {
+                            <form method="post" asp-page-handler="PayAgain" asp-route-orderId="@order.Id" class="mb-2">
+                                <button type="submit" class="btn btn-sm btn-primary">Thanh toán lại</button>
+                            </form>
+                        }
+
+                        @if (string.Equals(order.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <form method="post" asp-page-handler="Cancel" asp-route-orderId="@order.Id" class="mb-2 js-cancel-order-form">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Hủy đơn</button>
+                            </form>
+                        }
+
+                        @if (firstItem is not null)
+                        {
+                            <partial name="_OrderItemRow" model="firstItem" />
+                        }
+
+                        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                            @if (hiddenCount > 0)
+                            {
+                                <span class="text-muted small">và @hiddenCount sản phẩm khác</span>
+                            }
+                            else
+                            {
+                                <span></span>
+                            }
+
+                            <div class="d-flex align-items-center gap-3">
+                                <a class="btn btn-sm btn-outline-secondary" asp-page="/Orders/Details" asp-route-id="@order.Id">Xem chi tiết</a>
+                                <div class="fw-semibold">Tổng: @WebDisplay.FormatCurrency(order.TotalAmount)</div>
                             </div>
                         </div>
-                    `;
-
-                    const payBtn = card.querySelector('.js-pay-again');
-                    if (payBtn) {
-                        payBtn.addEventListener('click', async function () {
-                            payBtn.disabled = true;
-                            try {
-                                const checkout = await fetchJson('/api/payments/stripe/orders/' + id + '/retry', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                                    body: '{}'
-                                });
-                                const url = checkout.checkoutUrl ?? checkout.CheckoutUrl;
-                                if (url) window.location.href = url;
-                                else window.alert('Không nhận được liên kết thanh toán.');
-                            } catch (e) {
-                                const msg = e?.data?.message || e?.message || 'Không tạo được phiên thanh toán.';
-                                window.alert(msg);
-                            } finally {
-                                payBtn.disabled = false;
-                            }
-                        });
-                    }
-                    const cancelBtn = card.querySelector('.js-cancel-order');
-                    if (cancelBtn) {
-                        cancelBtn.addEventListener('click', async function () {
-                            const confirmed = typeof window.confirmInModal === 'function'
-                                ? await window.confirmInModal('Bạn có chắc muốn hủy đơn hàng này?')
-                                : false;
-                            if (!confirmed) return;
-                            cancelBtn.disabled = true;
-                            try {
-                                await fetchJson('/api/orders/' + id + '/cancel', { method: 'POST' });
-                                await loadOrders();
-                            } catch (e) {
-                                const msg = e?.data?.message || e?.data?.title || e?.message || 'Không hủy được đơn hàng.';
-                                window.alert(msg);
-                            } finally {
-                                cancelBtn.disabled = false;
-                            }
-                        });
-                    }
-                    const itemsWrap = card.querySelector('.js-items-wrap');
-                    const toggleBtn = card.querySelector('.js-toggle-items');
-                    const hiddenItemsContainer = document.createElement('div');
-                    hiddenItemsContainer.className = 'vstack gap-2 d-none';
-
-                    if (firstItem) {
-                        itemsWrap.appendChild(createOrderItemRow(firstItem));
-                    }
-
-                    if (hasMore) {
-                        orderItems.slice(1).forEach((it) => hiddenItemsContainer.appendChild(createOrderItemRow(it)));
-                        itemsWrap.appendChild(hiddenItemsContainer);
-                    }
-
-                    if (toggleBtn && hasMore) {
-                        toggleBtn.addEventListener('click', function () {
-                            const expanded = !hiddenItemsContainer.classList.contains('d-none');
-                            hiddenItemsContainer.classList.toggle('d-none', expanded);
-                            toggleBtn.textContent = expanded
-                                ? `Xem thêm ${Math.max(orderItems.length - 1, 0)} sản phẩm`
-                                : 'Thu gọn';
-                        });
-                    }
-
-                    els.list.appendChild(card);
-                });
+                    </div>
+                </article>
             }
+        </div>
 
-            function renderPagination(paged) {
-                els.paginationList.innerHTML = '';
-                const totalPages = paged.totalPages;
-                const currentPage = paged.pageNumber;
+        @if (Model.Orders.TotalPages > 1)
+        {
+            <nav class="mt-4" aria-label="Order pagination">
+                <ul class="pagination justify-content-center mb-0">
+                    <li class="page-item @(Model.Orders.HasPreviousPage ? string.Empty : "disabled")">
+                        <a class="page-link"
+                           asp-page="/Orders/Index"
+                           asp-route-status="@Model.Status"
+                           asp-route-pageNumber="@(Model.Orders.PageNumber - 1)">Trước</a>
+                    </li>
 
-                if (totalPages <= 1) {
-                    show(els.pagination, false);
-                    return;
-                }
-
-                function addPageItem(label, page, disabled, active) {
-                    const li = document.createElement('li');
-                    li.className = `page-item${disabled ? ' disabled' : ''}${active ? ' active' : ''}`;
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'page-link';
-                    btn.textContent = label;
-                    btn.disabled = !!disabled;
-                    if (!disabled && !active) {
-                        btn.addEventListener('click', function () {
-                            state.pageNumber = page;
-                            void loadOrders({ updateUrl: true });
-                        });
-                    }
-                    li.appendChild(btn);
-                    els.paginationList.appendChild(li);
-                }
-
-                addPageItem('Trước', currentPage - 1, currentPage <= 1, false);
-                for (let p = 1; p <= totalPages; p++) {
-                    addPageItem(String(p), p, false, p === currentPage);
-                }
-                addPageItem('Sau', currentPage + 1, currentPage >= totalPages, false);
-
-                show(els.pagination, true);
-            }
-
-            function renderStatusFilter() {
-                els.filterBar.innerHTML = '';
-                statuses.forEach((s) => {
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    const isActive = state.status === s.key;
-                    btn.className = `btn btn-sm ${isActive ? 'btn-dark' : 'btn-outline-dark'}`;
-                    btn.textContent = s.label;
-                    btn.addEventListener('click', function () {
-                        if (state.status === s.key) return;
-                        state.status = s.key;
-                        state.pageNumber = 1;
-                        renderStatusFilter();
-                        void loadOrders({ updateUrl: true });
-                    });
-                    els.filterBar.appendChild(btn);
-                });
-            }
-
-            async function loadOrders(options = {}) {
-                const { updateUrl = false, replaceUrl = false } = options;
-                show(els.loading, true);
-                show(els.empty, false);
-                clearError();
-
-                try {
-                    const params = new URLSearchParams();
-                    params.set('pageNumber', String(state.pageNumber));
-                    params.set('pageSize', String(state.pageSize));
-                    params.set('sortBy', state.sortBy);
-                    if (state.status) params.set('status', state.status);
-
-                    const raw = await fetchJson(`/api/orders/me?${params.toString()}`);
-                    const paged = normalizePaged(raw);
-                    state.paged = paged;
-                    state.pageNumber = paged.pageNumber;
-
-                    if (!paged.items.length) {
-                        els.list.innerHTML = '';
-                        show(els.empty, true);
-                        show(els.pagination, false);
-                    } else {
-                        renderOrders(paged.items);
-                        renderPagination(paged);
+                    @for (var pageNumber = 1; pageNumber <= Model.Orders.TotalPages; pageNumber++)
+                    {
+                        <li class="page-item @(pageNumber == Model.Orders.PageNumber ? "active" : string.Empty)">
+                            <a class="page-link"
+                               asp-page="/Orders/Index"
+                               asp-route-status="@Model.Status"
+                               asp-route-pageNumber="@pageNumber">@pageNumber</a>
+                        </li>
                     }
 
-                    if (updateUrl) {
-                        writeUrlFromState(replaceUrl);
-                    }
-                } catch (e) {
-                    setError(e?.data?.error || e?.message || 'Không tải được đơn hàng.');
-                    els.list.innerHTML = '';
-                    show(els.pagination, false);
-                } finally {
-                    show(els.loading, false);
-                }
-            }
-
-            document.addEventListener('DOMContentLoaded', function () {
-                readStateFromUrl();
-                renderStatusFilter();
-                void loadOrders({ updateUrl: true, replaceUrl: true });
-
-                window.addEventListener('popstate', function () {
-                    readStateFromUrl();
-                    renderStatusFilter();
-                    void loadOrders({ updateUrl: false });
-                });
-            });
-        })();
-    </script>
-}
+                    <li class="page-item @(Model.Orders.HasNextPage ? string.Empty : "disabled")">
+                        <a class="page-link"
+                           asp-page="/Orders/Index"
+                           asp-route-status="@Model.Status"
+                           asp-route-pageNumber="@(Model.Orders.PageNumber + 1)">Sau</a>
+                    </li>
+                </ul>
+            </nav>
+        }
+    }
+</div>

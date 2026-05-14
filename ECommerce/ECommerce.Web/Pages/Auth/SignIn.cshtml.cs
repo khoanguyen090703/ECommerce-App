@@ -1,26 +1,19 @@
-using ECommerce.SharedViewModels.DTOs.Auth;
 using ECommerce.Web.Auth;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
-using System.Net.Http.Json;
 
 namespace ECommerce.Web.Pages.Auth
 {
     public class SignInModel : PageModel
     {
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IConfiguration _configuration;
-        private readonly IAuthSessionManager _authSessionManager;
+        private readonly IAuthService _authService;
+        private readonly IAuthCookieService _authCookieService;
 
-        public SignInModel(
-            IHttpClientFactory httpClientFactory,
-            IConfiguration configuration,
-            IAuthSessionManager authSessionManager)
+        public SignInModel(IAuthService authService, IAuthCookieService authCookieService)
         {
-            _httpClientFactory = httpClientFactory;
-            _configuration = configuration;
-            _authSessionManager = authSessionManager;
+            _authService = authService;
+            _authCookieService = authCookieService;
         }
 
         [BindProperty]
@@ -32,43 +25,31 @@ namespace ECommerce.Web.Pages.Auth
         [TempData]
         public string? SuccessMessage { get; set; }
 
+        public bool SignedOut { get; private set; }
+
         public void OnGet()
         {
             ReturnUrl = AuthReturnUrl.Normalize(ReturnUrl);
+            SignedOut = string.Equals(Request.Query["signedOut"], "true", StringComparison.OrdinalIgnoreCase);
         }
 
-        public async Task<IActionResult> OnPostAsync()
+        public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
         {
             if (!ModelState.IsValid)
-            {
                 return Page();
-            }
-
-            var request = new SignInRequest
-            {
-                Email = Input.Email,
-                Password = Input.Password
-            };
 
             try
             {
-                var client = _httpClientFactory.CreateClient();
-                var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "http://localhost:5206";
-                var response = await client.PostAsJsonAsync($"{apiBaseUrl}/api/auth/signin", request);
-                var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-
-                if (!response.IsSuccessStatusCode || authResponse?.IsSuccess != true)
+                var tokenResponse = await _authService.LoginAsync(Input.Email, Input.Password, cancellationToken);
+                if (tokenResponse is null)
                 {
-                    ModelState.AddModelError(string.Empty, authResponse?.Message ?? "Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu.");
+                    ModelState.AddModelError(string.Empty, "Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu.");
                     return Page();
                 }
 
-                if (!string.IsNullOrWhiteSpace(authResponse.Token) && !string.IsNullOrWhiteSpace(authResponse.RefreshToken))
-                {
-                    _authSessionManager.UpdateTokens(HttpContext, authResponse.Token, authResponse.RefreshToken);
-                }
+                await _authCookieService.SignInAsync(HttpContext, tokenResponse, Input.Email, cancellationToken);
 
-                SuccessMessage = authResponse.Message;
+                SuccessMessage = "Đăng nhập thành công.";
                 var destination = AuthReturnUrl.Normalize(ReturnUrl) ?? "/Index";
                 return Redirect(destination);
             }

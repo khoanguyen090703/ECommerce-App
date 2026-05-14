@@ -1,3 +1,4 @@
+using ECommerce.Web.Auth;
 using System.Text.Json;
 using ECommerce.SharedViewModels.DTOs.Response;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -7,12 +8,10 @@ namespace ECommerce.Web.Pages.ProductVariants
     public class ProductDetailsModel : PageModel
     {
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IConfiguration _configuration;
 
-        public ProductDetailsModel(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+        public ProductDetailsModel(IHttpClientFactory httpClientFactory)
         {
             _httpClientFactory = httpClientFactory;
-            _configuration = configuration;
         }
 
         public VariantDetails4Cus? VariantDetails { get; set; }
@@ -24,15 +23,14 @@ namespace ECommerce.Web.Pages.ProductVariants
             CurrentVariantId = id;
             if (id <= 0)
             {
-                ErrorMessage = "Id variant không hợp lệ.";
+                ErrorMessage = "Mã biến thể không hợp lệ.";
                 return;
             }
 
             try
             {
-                var client = _httpClientFactory.CreateClient();
-                var apiUrl = _configuration["ApiBaseUrl"] ?? "http://localhost:5206";
-                var response = await client.GetAsync($"{apiUrl}/api/products/variant/{id}");
+                var client = _httpClientFactory.CreateClient(AuthConstants.ApiAnonymousClientName);
+                var response = await client.GetAsync($"api/products/variant/{id}");
 
                 if (!response.IsSuccessStatusCode)
                 {

@@ -1,4 +1,5 @@
 using ECommerce.SharedViewModels.DTOs.Auth;
+using ECommerce.Web.Auth;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
@@ -9,12 +10,10 @@ namespace ECommerce.Web.Pages.Auth
     public class SignUpModel : PageModel
     {
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IConfiguration _configuration;
 
-        public SignUpModel(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+        public SignUpModel(IHttpClientFactory httpClientFactory)
         {
             _httpClientFactory = httpClientFactory;
-            _configuration = configuration;
         }
 
         [BindProperty]
@@ -40,9 +39,8 @@ namespace ECommerce.Web.Pages.Auth
 
             try
             {
-                var client = _httpClientFactory.CreateClient();
-                var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "http://localhost:5206";
-                var response = await client.PostAsJsonAsync($"{apiBaseUrl}/api/auth/signup", request);
+                var client = _httpClientFactory.CreateClient(AuthConstants.ApiAnonymousClientName);
+                var response = await client.PostAsJsonAsync("api/auth/signup", request);
                 var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
 
                 if (!response.IsSuccessStatusCode || authResponse?.IsSuccess != true)

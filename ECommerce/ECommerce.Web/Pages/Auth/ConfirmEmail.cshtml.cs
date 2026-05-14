@@ -1,4 +1,5 @@
 using ECommerce.SharedViewModels.DTOs.Auth;
+using ECommerce.Web.Auth;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Json;
@@ -8,12 +9,10 @@ namespace ECommerce.Web.Pages.Auth;
 public class ConfirmEmailModel : PageModel
 {
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly IConfiguration _configuration;
 
-    public ConfirmEmailModel(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+    public ConfirmEmailModel(IHttpClientFactory httpClientFactory)
     {
         _httpClientFactory = httpClientFactory;
-        _configuration = configuration;
     }
 
     public string? Message { get; set; }
@@ -31,9 +30,8 @@ public class ConfirmEmailModel : PageModel
 
         try
         {
-            var client = _httpClientFactory.CreateClient();
-            var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "http://localhost:5206";
-            var url = $"{apiBaseUrl}/api/auth/confirm-email?userId={Uri.EscapeDataString(userId)}&token={Uri.EscapeDataString(token)}";
+            var client = _httpClientFactory.CreateClient(AuthConstants.ApiAnonymousClientName);
+            var url = $"api/auth/confirm-email?userId={Uri.EscapeDataString(userId)}&token={Uri.EscapeDataString(token)}";
             var response = await client.GetAsync(url);
 
             if (response.IsSuccessStatusCode)

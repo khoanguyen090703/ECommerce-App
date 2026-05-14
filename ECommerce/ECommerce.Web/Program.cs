@@ -1,14 +1,15 @@
 using ECommerce.Web.Auth;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using ECommerce.Web.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5206";
+
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
@@ -24,66 +25,55 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
     options.HttpOnly = HttpOnlyPolicy.Always;
     options.Secure = CookieSecurePolicy.SameAsRequest;
 });
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<IAuthSessionManager, AuthSessionManager>();
-builder.Services.AddTransient<ApiAuthenticationHandler>();
-builder.Services.AddHttpClient("ApiAnonymous", client =>
+builder.Services.AddAntiforgery(options =>
 {
-    var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5206";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+});
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAuthCookieService, AuthCookieService>();
+builder.Services.AddSingleton<VietnamAddressClient>();
+builder.Services.AddTransient<TokenRefreshHandler>();
+builder.Services.AddHttpClient(AuthConstants.ApiAnonymousClientName, client =>
+{
     client.BaseAddress = new Uri(apiBaseUrl.TrimEnd('/') + "/");
     client.Timeout = TimeSpan.FromSeconds(15);
 });
-builder.Services.AddHttpClient(Options.DefaultName, client =>
+builder.Services.AddHttpClient(AuthConstants.ApiClientName, client =>
 {
-    var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5206";
     client.BaseAddress = new Uri(apiBaseUrl.TrimEnd('/') + "/");
     client.Timeout = TimeSpan.FromSeconds(15);
 })
-    .AddHttpMessageHandler<ApiAuthenticationHandler>();
+    .AddHttpMessageHandler<TokenRefreshHandler>();
 builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
     {
-        var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-        var key = jwtSettings["Key"];
-
-        options.TokenValidationParameters = new TokenValidationParameters
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.Path = "/";
+        options.SlidingExpiration = true;
+        options.ExpireTimeSpan = AuthConstants.AuthenticationCookieLifetime;
+        options.LoginPath = "/Auth/SignIn";
+        options.Events.OnRedirectToLogin = context =>
         {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key ?? string.Empty)),
-            ValidateIssuer = true,
-            ValidIssuer = jwtSettings["Issuer"],
-            ValidateAudience = true,
-            ValidAudience = jwtSettings["Audience"],
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
-        };
-
-        // API token is stored in HttpOnly cookie after sign-in.
-        options.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = context =>
+            if (context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase))
             {
-                context.Token = context.Request.Cookies["access_token"];
-                return Task.CompletedTask;
-            },
-            OnAuthenticationFailed = JwtCookieRefreshEvents.HandleAuthenticationFailedAsync,
-            OnChallenge = context =>
-            {
-                if (context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase))
-                    return Task.CompletedTask;
-
-                context.HandleResponse();
-                context.Response.Redirect(AuthReturnUrl.BuildSignInUrl(context.Request));
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 return Task.CompletedTask;
             }
+
+            context.Response.Redirect(AuthReturnUrl.BuildSignInUrl(context.Request));
+            return Task.CompletedTask;
         };
     });
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
@@ -92,20 +82,40 @@ if (!app.Environment.IsDevelopment())
 app.UseRouting();
 
 app.UseCookiePolicy();
-app.UseMiddleware<AuthCookieRefreshMiddleware>();
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseMiddleware<ForceSignOutMiddleware>();
 
 app.MapStaticAssets();
 app.MapRazorPages()
    .WithStaticAssets();
 
-// BFF: browser calls same-origin /api/cart* with cookies; forwards to API with Bearer (HttpClient + ApiAuthenticationHandler).
+app.MapPost("/api/auth/refresh-session", async (
+    HttpContext httpContext,
+    IAuthService authService,
+    IAuthCookieService authCookieService,
+    CancellationToken cancellationToken) =>
+{
+    var refreshToken = httpContext.Request.Cookies[AuthConstants.RefreshTokenCookieName];
+    var accessToken = httpContext.User.FindFirstValue(AuthConstants.AccessTokenClaimType);
+    if (string.IsNullOrWhiteSpace(refreshToken) || string.IsNullOrWhiteSpace(accessToken))
+        return Results.Unauthorized();
+
+    var refreshed = await authService.RefreshAsync(accessToken, refreshToken, cancellationToken);
+    if (refreshed is null)
+    {
+        await authCookieService.SignOutAsync(httpContext, cancellationToken);
+        return Results.Unauthorized();
+    }
+
+    var userName = httpContext.User.Identity?.Name ?? string.Empty;
+    await authCookieService.SignInAsync(httpContext, refreshed, userName, cancellationToken);
+    return Results.Ok();
+}).RequireAuthorization();
+
 app.MapGet("/api/cart/item-count", async (IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
 {
-    var client = httpClientFactory.CreateClient();
+    var client = httpClientFactory.CreateClient(AuthConstants.ApiClientName);
     using var response = await client.GetAsync("api/cart/item-count", cancellationToken);
     var payload = await response.Content.ReadAsStringAsync(cancellationToken);
     return Results.Content(payload, "application/json", statusCode: (int)response.StatusCode);
@@ -113,7 +123,7 @@ app.MapGet("/api/cart/item-count", async (IHttpClientFactory httpClientFactory, 
 
 app.MapGet("/api/cart", async (IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
 {
-    var client = httpClientFactory.CreateClient();
+    var client = httpClientFactory.CreateClient(AuthConstants.ApiClientName);
     using var response = await client.GetAsync("api/cart", cancellationToken);
     var payload = await response.Content.ReadAsStringAsync(cancellationToken);
     return Results.Content(payload, "application/json", statusCode: (int)response.StatusCode);
@@ -122,7 +132,7 @@ app.MapGet("/api/cart", async (IHttpClientFactory httpClientFactory, Cancellatio
 app.MapPost("/api/cart/items", async (HttpRequest request, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
 {
     var body = await new StreamReader(request.Body).ReadToEndAsync(cancellationToken);
-    var client = httpClientFactory.CreateClient();
+    var client = httpClientFactory.CreateClient(AuthConstants.ApiClientName);
     using var req = new HttpRequestMessage(HttpMethod.Post, "api/cart/items")
     {
         Content = new StringContent(body, Encoding.UTF8, "application/json")
@@ -130,9 +140,7 @@ app.MapPost("/api/cart/items", async (HttpRequest request, IHttpClientFactory ht
     using var response = await client.SendAsync(req, cancellationToken);
     var payload = await response.Content.ReadAsStringAsync(cancellationToken);
     if (string.IsNullOrWhiteSpace(payload))
-    {
         return Results.StatusCode((int)response.StatusCode);
-    }
 
     return Results.Content(payload, "application/json", statusCode: (int)response.StatusCode);
 }).RequireAuthorization();
@@ -140,7 +148,7 @@ app.MapPost("/api/cart/items", async (HttpRequest request, IHttpClientFactory ht
 app.MapPatch("/api/cart/items/{itemId:int}", async (int itemId, HttpRequest request, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
 {
     var body = await new StreamReader(request.Body).ReadToEndAsync(cancellationToken);
-    var client = httpClientFactory.CreateClient();
+    var client = httpClientFactory.CreateClient(AuthConstants.ApiClientName);
     using var req = new HttpRequestMessage(HttpMethod.Patch, $"api/cart/items/{itemId}")
     {
         Content = new StringContent(body, Encoding.UTF8, "application/json")
@@ -148,49 +156,36 @@ app.MapPatch("/api/cart/items/{itemId:int}", async (int itemId, HttpRequest requ
     using var response = await client.SendAsync(req, cancellationToken);
     var payload = await response.Content.ReadAsStringAsync(cancellationToken);
     if (string.IsNullOrWhiteSpace(payload))
-    {
         return Results.StatusCode((int)response.StatusCode);
-    }
 
     return Results.Content(payload, "application/json", statusCode: (int)response.StatusCode);
 }).RequireAuthorization();
 
 app.MapDelete("/api/cart/items/{itemId:int}", async (int itemId, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
 {
-    var client = httpClientFactory.CreateClient();
+    var client = httpClientFactory.CreateClient(AuthConstants.ApiClientName);
     using var response = await client.DeleteAsync($"api/cart/items/{itemId}", cancellationToken);
     var payload = await response.Content.ReadAsStringAsync(cancellationToken);
     if (string.IsNullOrWhiteSpace(payload))
-    {
         return Results.StatusCode((int)response.StatusCode);
-    }
 
     return Results.Content(payload, "application/json", statusCode: (int)response.StatusCode);
 }).RequireAuthorization();
 
 app.MapDelete("/api/cart/items", async (IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
 {
-    var client = httpClientFactory.CreateClient();
+    var client = httpClientFactory.CreateClient(AuthConstants.ApiClientName);
     using var response = await client.DeleteAsync("api/cart/items", cancellationToken);
     var payload = await response.Content.ReadAsStringAsync(cancellationToken);
     if (string.IsNullOrWhiteSpace(payload))
-    {
         return Results.StatusCode((int)response.StatusCode);
-    }
 
     return Results.Content(payload, "application/json", statusCode: (int)response.StatusCode);
 }).RequireAuthorization();
 
-// BFF: checkout & order creation (same-origin /api/checkout, /api/orders)
-app.MapPost("/api/auth/refresh-session", async (HttpContext httpContext, CancellationToken cancellationToken) =>
-{
-    var refreshed = await AuthTokenRefresher.TryRefreshAsync(httpContext, cancellationToken);
-    return refreshed ? Results.Ok() : Results.Unauthorized();
-});
-
 app.MapGet("/api/checkout", async (IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
 {
-    var client = httpClientFactory.CreateClient();
+    var client = httpClientFactory.CreateClient(AuthConstants.ApiClientName);
     using var response = await client.GetAsync("api/checkout", cancellationToken);
     var payload = await response.Content.ReadAsStringAsync(cancellationToken);
     return Results.Content(payload, "application/json", statusCode: (int)response.StatusCode);
@@ -199,7 +194,7 @@ app.MapGet("/api/checkout", async (IHttpClientFactory httpClientFactory, Cancell
 app.MapPost("/api/orders", async (HttpRequest request, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
 {
     var body = await new StreamReader(request.Body).ReadToEndAsync(cancellationToken);
-    var client = httpClientFactory.CreateClient();
+    var client = httpClientFactory.CreateClient(AuthConstants.ApiClientName);
     using var req = new HttpRequestMessage(HttpMethod.Post, "api/orders")
     {
         Content = new StringContent(body, Encoding.UTF8, "application/json")
@@ -207,9 +202,7 @@ app.MapPost("/api/orders", async (HttpRequest request, IHttpClientFactory httpCl
     using var response = await client.SendAsync(req, cancellationToken);
     var payload = await response.Content.ReadAsStringAsync(cancellationToken);
     if (string.IsNullOrWhiteSpace(payload))
-    {
         return Results.StatusCode((int)response.StatusCode);
-    }
 
     return Results.Content(payload, "application/json", statusCode: (int)response.StatusCode);
 }).RequireAuthorization();
@@ -217,7 +210,7 @@ app.MapPost("/api/orders", async (HttpRequest request, IHttpClientFactory httpCl
 app.MapGet("/api/orders/me", async (HttpRequest request, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
 {
     var query = request.QueryString.HasValue ? request.QueryString.Value : string.Empty;
-    var client = httpClientFactory.CreateClient();
+    var client = httpClientFactory.CreateClient(AuthConstants.ApiClientName);
     using var response = await client.GetAsync($"api/orders/me{query}", cancellationToken);
     var payload = await response.Content.ReadAsStringAsync(cancellationToken);
     return Results.Content(payload, "application/json", statusCode: (int)response.StatusCode);
@@ -225,7 +218,7 @@ app.MapGet("/api/orders/me", async (HttpRequest request, IHttpClientFactory http
 
 app.MapGet("/api/orders/{id:int:min(1)}", async (int id, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
 {
-    var client = httpClientFactory.CreateClient();
+    var client = httpClientFactory.CreateClient(AuthConstants.ApiClientName);
     using var response = await client.GetAsync($"api/orders/{id}", cancellationToken);
     var payload = await response.Content.ReadAsStringAsync(cancellationToken);
     return Results.Content(payload, "application/json", statusCode: (int)response.StatusCode);
@@ -233,18 +226,19 @@ app.MapGet("/api/orders/{id:int:min(1)}", async (int id, IHttpClientFactory http
 
 app.MapPost("/api/orders/{id:int:min(1)}/cancel", async (int id, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
 {
-    var client = httpClientFactory.CreateClient();
+    var client = httpClientFactory.CreateClient(AuthConstants.ApiClientName);
     using var response = await client.PostAsync($"api/orders/{id}/cancel", null, cancellationToken);
     var payload = await response.Content.ReadAsStringAsync(cancellationToken);
     if (string.IsNullOrWhiteSpace(payload))
         return Results.StatusCode((int)response.StatusCode);
+
     return Results.Content(payload, "application/json", statusCode: (int)response.StatusCode);
 }).RequireAuthorization();
 
 app.MapPost("/api/payments/stripe/checkout", async (HttpRequest request, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
 {
     var body = await new StreamReader(request.Body).ReadToEndAsync(cancellationToken);
-    var client = httpClientFactory.CreateClient();
+    var client = httpClientFactory.CreateClient(AuthConstants.ApiClientName);
     using var req = new HttpRequestMessage(HttpMethod.Post, "api/payments/stripe/checkout")
     {
         Content = new StringContent(body, Encoding.UTF8, "application/json")
@@ -253,12 +247,13 @@ app.MapPost("/api/payments/stripe/checkout", async (HttpRequest request, IHttpCl
     var payload = await response.Content.ReadAsStringAsync(cancellationToken);
     if (string.IsNullOrWhiteSpace(payload))
         return Results.StatusCode((int)response.StatusCode);
+
     return Results.Content(payload, "application/json", statusCode: (int)response.StatusCode);
 }).RequireAuthorization();
 
 app.MapGet("/api/payments/stripe/orders/{orderId:int:min(1)}/status", async (int orderId, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
 {
-    var client = httpClientFactory.CreateClient();
+    var client = httpClientFactory.CreateClient(AuthConstants.ApiClientName);
     using var response = await client.GetAsync($"api/payments/stripe/orders/{orderId}/status", cancellationToken);
     var payload = await response.Content.ReadAsStringAsync(cancellationToken);
     return Results.Content(payload, "application/json", statusCode: (int)response.StatusCode);
@@ -266,7 +261,7 @@ app.MapGet("/api/payments/stripe/orders/{orderId:int:min(1)}/status", async (int
 
 app.MapPost("/api/payments/stripe/orders/{orderId:int:min(1)}/retry", async (int orderId, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
 {
-    var client = httpClientFactory.CreateClient();
+    var client = httpClientFactory.CreateClient(AuthConstants.ApiClientName);
     using var req = new HttpRequestMessage(HttpMethod.Post, $"api/payments/stripe/orders/{orderId}/retry")
     {
         Content = new StringContent("{}", Encoding.UTF8, "application/json")
@@ -275,6 +270,7 @@ app.MapPost("/api/payments/stripe/orders/{orderId:int:min(1)}/retry", async (int
     var payload = await response.Content.ReadAsStringAsync(cancellationToken);
     if (string.IsNullOrWhiteSpace(payload))
         return Results.StatusCode((int)response.StatusCode);
+
     return Results.Content(payload, "application/json", statusCode: (int)response.StatusCode);
 }).RequireAuthorization();
 

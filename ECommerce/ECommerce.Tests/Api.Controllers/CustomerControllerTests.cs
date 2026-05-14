@@ -56,7 +56,7 @@ namespace ECommerce.Tests.Api.Controllers
                     UpdatedDate = null,
                 },
             };
-            var paged = new PagedResult<CustomerResponse>(items, count: 6, pageNumber: 2, pageSize: 5);
+            var paged = new PagedResult<CustomerResponse>(items, totalCount: 6, pageNumber: 2, pageSize: 5);
             _customerService.Setup(service => service.GetCustomersAsync(It.IsAny<CustomerQueryParams>())).ReturnsAsync(paged);
             var controller = new CustomerController(_customerService.Object);
 

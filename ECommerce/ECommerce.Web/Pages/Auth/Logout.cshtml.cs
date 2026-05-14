@@ -6,13 +6,13 @@ namespace ECommerce.Web.Pages.Auth;
 
 public class LogoutModel : PageModel
 {
-    private readonly IAuthSessionManager _authSessionManager;
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IAuthService _authService;
+    private readonly IAuthCookieService _authCookieService;
 
-    public LogoutModel(IHttpClientFactory httpClientFactory, IAuthSessionManager authSessionManager)
+    public LogoutModel(IAuthService authService, IAuthCookieService authCookieService)
     {
-        _httpClientFactory = httpClientFactory;
-        _authSessionManager = authSessionManager;
+        _authService = authService;
+        _authCookieService = authCookieService;
     }
 
     public IActionResult OnGet()
@@ -20,25 +20,18 @@ public class LogoutModel : PageModel
         return RedirectToPage("/Index");
     }
 
-    public async Task<IActionResult> OnPostAsync()
+    public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
-        var accessToken = _authSessionManager.GetAccessToken(HttpContext);
-
-        if (!string.IsNullOrWhiteSpace(accessToken))
+        try
         {
-            try
-            {
-                var client = _httpClientFactory.CreateClient();
-                using var request = new HttpRequestMessage(HttpMethod.Post, "api/auth/logout");
-                await client.SendAsync(request);
-            }
-            catch
-            {
-                // Still clear cookies so tokens are never left in the browser.
-            }
+            await _authService.RevokeAsync(cancellationToken);
+        }
+        catch
+        {
+            // Local sign-out still proceeds.
         }
 
-        _authSessionManager.ClearTokens(HttpContext);
+        await _authCookieService.SignOutAsync(HttpContext, cancellationToken);
 
         return RedirectToPage("/Auth/SignIn", new { signedOut = true });
     }

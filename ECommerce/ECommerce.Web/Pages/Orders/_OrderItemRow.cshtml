@@ -1,0 +1,21 @@
+@using ECommerce.SharedViewModels.DTOs.Response
+@using ECommerce.Web.Helpers
+@model Item4MyOrderResponse
+
+<div class="d-flex align-items-center gap-3 border rounded p-2">
+    <div class="flex-shrink-0">
+        @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+        {
+            <img src="@Model.ImageUrl" alt="" width="52" height="52" class="rounded border" style="object-fit:cover;" />
+        }
+        else
+        {
+            <div class="rounded border bg-light" style="width:52px;height:52px;"></div>
+        }
+    </div>
+    <div class="flex-grow-1 min-w-0">
+        <div class="fw-semibold text-truncate" title="@Model.ProductName">@Model.ProductName</div>
+        <div class="small text-muted">SL: @Model.Quantity • @WebDisplay.FormatCurrency(Model.UnitPrice) / sp</div>
+    </div>
+    <div class="fw-semibold text-end">@WebDisplay.FormatCurrency(Model.Quantity * Model.UnitPrice)</div>
+</div>

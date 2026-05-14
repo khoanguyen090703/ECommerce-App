@@ -15,6 +15,11 @@
 
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3"></div>
 
+                        @if (Model.SignedOut)
+                        {
+                            <div class="alert alert-success" role="status">Bạn đã đăng xuất thành công.</div>
+                        }
+
                         <form method="post" novalidate>
                             <input type="hidden" asp-for="ReturnUrl" />
                             <div class="mb-3">
@@ -22,16 +27,11 @@
                                 <input asp-for="Input.Email" class="form-control" placeholder="email@example.com" autocomplete="email" />
                                 <span asp-validation-for="Input.Email" class="text-danger"></span>
                             </div>
-
                             <div class="mb-4">
                                 <label asp-for="Input.Password" class="form-label"></label>
-                                <div class="input-group">
-                                    <input asp-for="Input.Password" class="form-control" autocomplete="current-password" id="signin-password" />
-                                    <button class="btn btn-outline-secondary" type="button" id="toggle-signin-password">Hiện</button>
-                                </div>
+                                <input asp-for="Input.Password" class="form-control" type="password" autocomplete="current-password" />
                                 <span asp-validation-for="Input.Password" class="text-danger"></span>
                             </div>
-
                             <button type="submit" class="btn w-100" style="background-color:#d35400;color:#ffffff;border-color:#d35400;">
                                 Đăng nhập
                             </button>
@@ -50,60 +50,4 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script>
-        (function () {
-            const input = document.getElementById("signin-password");
-            const button = document.getElementById("toggle-signin-password");
-            if (!input || !button) return;
-
-            button.addEventListener("click", function () {
-                const isPassword = input.type === "password";
-                input.type = isPassword ? "text" : "password";
-                button.textContent = isPassword ? "Ẩn" : "Hiện";
-            });
-        })();
-    </script>
-    <script>
-        (function () {
-            const params = new URLSearchParams(window.location.search);
-            const flag = params.get("signedOut");
-            if (!flag || flag.toLowerCase() !== "true") return;
-
-            const toast = document.createElement("div");
-            toast.setAttribute("role", "status");
-            toast.textContent = "Bạn đã đăng xuất thành công.";
-            toast.style.cssText = [
-                "position:fixed",
-                "top:1rem",
-                "right:1rem",
-                "z-index:1080",
-                "max-width:min(320px,calc(100vw - 2rem))",
-                "padding:0.65rem 1rem",
-                "font-size:0.9rem",
-                "line-height:1.4",
-                "color:#fff",
-                "background:#198754",
-                "border-radius:0.375rem",
-                "box-shadow:0 0.35rem 1rem rgba(0,0,0,0.18)",
-                "opacity:0",
-                "transform:translateX(0.5rem)",
-                "transition:opacity 0.25s ease,transform 0.25s ease"
-            ].join(";");
-
-            document.body.appendChild(toast);
-            requestAnimationFrame(function () {
-                toast.style.opacity = "1";
-                toast.style.transform = "translateX(0)";
-            });
-
-            const cleanUrl = window.location.pathname + window.location.hash;
-            window.history.replaceState({}, "", cleanUrl);
-
-            setTimeout(function () {
-                toast.style.opacity = "0";
-                toast.style.transform = "translateX(0.5rem)";
-                setTimeout(function () { toast.remove(); }, 280);
-            }, 4000);
-        })();
-    </script>
 }

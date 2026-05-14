@@ -1,3 +1,4 @@
+using ECommerce.Web.Auth;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Text.Json;
@@ -8,12 +9,10 @@ namespace ECommerce.Web.Pages.ProductVariants
     public class ProductVariantsListModel : PageModel
     {
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IConfiguration _configuration;
 
-        public ProductVariantsListModel(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+        public ProductVariantsListModel(IHttpClientFactory httpClientFactory)
         {
             _httpClientFactory = httpClientFactory;
-            _configuration = configuration;
         }
 
         [BindProperty(SupportsGet = true)]
@@ -48,11 +47,9 @@ namespace ECommerce.Web.Pages.ProductVariants
         {
             try
             {
-                var client = _httpClientFactory.CreateClient();
-                var apiUrl = _configuration["ApiBaseUrl"] ?? "http://localhost:5206";
+                var client = _httpClientFactory.CreateClient(AuthConstants.ApiAnonymousClientName);
 
-                // Load filter options
-                var catResponse = await client.GetAsync($"{apiUrl}/api/categories/all");
+                var catResponse = await client.GetAsync("api/categories/all");
                 if (catResponse.IsSuccessStatusCode)
                 {
                     var content = await catResponse.Content.ReadAsStringAsync();
@@ -60,7 +57,7 @@ namespace ECommerce.Web.Pages.ProductVariants
                     Categories = categoryDtos.Select(c => new FilterItemViewModel { Id = c.Id, Name = c.Name }).ToList();
                 }
 
-                var brandResponse = await client.GetAsync($"{apiUrl}/api/brands/all");
+                var brandResponse = await client.GetAsync("api/brands/all");
                 if (brandResponse.IsSuccessStatusCode)
                 {
                     var content = await brandResponse.Content.ReadAsStringAsync();
@@ -68,7 +65,7 @@ namespace ECommerce.Web.Pages.ProductVariants
                     Brands = brandDtoList.Select(b => new FilterItemViewModel { Id = b.Id, Name = b.Name }).ToList();
                 }
 
-                var sfResponse = await client.GetAsync($"{apiUrl}/api/scentfamilies");
+                var sfResponse = await client.GetAsync("api/scentfamilies");
                 if (sfResponse.IsSuccessStatusCode)
                 {
                     var content = await sfResponse.Content.ReadAsStringAsync();
@@ -94,7 +91,7 @@ namespace ECommerce.Web.Pages.ProductVariants
                 var queryString = string.Join("&", queryParams);
 
                 // Fetch variants
-                var varResponse = await client.GetAsync($"{apiUrl}/api/variants?{queryString}");
+                var varResponse = await client.GetAsync($"api/variants?{queryString}");
                 if (varResponse.IsSuccessStatusCode)
                 {
                     var content = await varResponse.Content.ReadAsStringAsync();

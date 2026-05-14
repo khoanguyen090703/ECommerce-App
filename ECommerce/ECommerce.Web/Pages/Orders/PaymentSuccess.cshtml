@@ -23,15 +23,7 @@
                 </div>
             }
 
-            @if (Model.ShouldSyncPaymentInBackground)
-            {
-                <div id="paySuccessSync" class="text-center text-muted small py-2" role="status">
-                    <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
-                    <span>Đang đồng bộ trạng thái thanh toán…</span>
-                </div>
-            }
-
-            <div id="paySuccessCard" class="card shadow-sm border-0">
+            <div class="card shadow-sm border-0">
                 <div class="card-body p-4 p-md-5 text-center">
                     <div class="mb-3" style="font-size: 3rem; line-height: 1;">✅</div>
                     <h1 class="h4 mb-2">Thanh toán thành công</h1>
@@ -42,8 +34,12 @@
                             <span> — Tổng @t.ToString("N0") ₫</span>
                         }
                     </p>
-                    <p id="paySuccessSub" class="small text-muted mb-4">
-                        @if (Model.ReturnedFromStripe)
+                    <p class="small text-muted mb-4">
+                        @if (!string.IsNullOrWhiteSpace(Model.PaymentSyncNote))
+                        {
+                            @Model.PaymentSyncNote
+                        }
+                        else if (Model.ReturnedFromStripe)
                         {
                             <text>Cảm ơn bạn. Stripe đã ghi nhận thanh toán.</text>
                         }
@@ -58,60 +54,6 @@
                     </div>
                 </div>
             </div>
-
-            @if (Model.ShouldSyncPaymentInBackground)
-            {
-                <script>
-                    (function () {
-                        const orderId = @oid;
-                        const syncEl = document.getElementById('paySuccessSync');
-                        const sub = document.getElementById('paySuccessSub');
-
-                        function hideSync() {
-                            if (syncEl) syncEl.classList.add('d-none');
-                        }
-
-                        async function fetchJson(url) {
-                            const controller = new AbortController();
-                            const timer = window.setTimeout(function () { controller.abort(); }, 8000);
-                            try {
-                                const res = await fetch(url, {
-                                    credentials: 'same-origin',
-                                    headers: { 'Accept': 'application/json' },
-                                    signal: controller.signal
-                                });
-                                const text = await res.text();
-                                let data = null;
-                                if (text) { try { data = JSON.parse(text); } catch { data = null; } }
-                                if (!res.ok) return null;
-                                return data;
-                            } finally {
-                                window.clearTimeout(timer);
-                            }
-                        }
-
-                        function delay(ms) { return new Promise(function (r) { window.setTimeout(r, ms); }); }
-
-                        document.addEventListener('DOMContentLoaded', async function () {
-                            let paid = false;
-                            for (let i = 0; i < 8 && !paid; i++) {
-                                const st = await fetchJson('/api/payments/stripe/orders/' + orderId + '/status');
-                                const ops = (st?.orderPaymentStatus ?? st?.OrderPaymentStatus ?? '').toString();
-                                if (ops.toLowerCase() === 'paid') {
-                                    paid = true;
-                                    break;
-                                }
-                                await delay(700);
-                            }
-
-                            hideSync();
-                            if (!paid && sub) {
-                                sub.textContent = 'Nếu tiền đã trừ, trạng thái đơn sẽ cập nhật sau vài phút. Bạn có thể tải lại trang chi tiết đơn hàng.';
-                            }
-                        });
-                    })();
-                </script>
-            }
         }
     </div>
 </div>
